@@ -67,6 +67,14 @@ class RootCommand(Feature):
         All other functionality is within its subcommands.
         """
 
+        embed = discord.Embed(title="About", color=0x000000)
+        field = []
+
+        def flush_field(name: str):
+            nonlocal field
+            embed.add_field(name=name, value="\n".join(field))
+            field = []
+
         # Try to locate what vends the `discord` package
         distributions = [
             dist for dist in packages_distributions()['discord']
@@ -81,13 +89,14 @@ class RootCommand(Feature):
         else:
             dist_version = f'unknown `{discord.__version__}`'
 
-        summary = [
-            f"Custom Jishaku v{package_version('jishaku')}, {dist_version}, "
-            f"`Python {sys.version}` on `{sys.platform}`".replace("\n", ""),
-            f"Module was loaded <t:{self.load_time.timestamp():.0f}:R>, "
-            f"cog was loaded <t:{self.start_time.timestamp():.0f}:R>.",
-            ""
-        ]
+        embed.description = "\n".join(
+            [
+                f"Custom Jishaku `v{package_version('jishaku')} ({dist_version})`",
+                f"Python `{sys.version}` on `{sys.platform}`".replace("\n", ""),
+                f"Module was loaded <t:{self.load_time.timestamp():.0f}:R>, "
+                f"cog was loaded <t:{self.start_time.timestamp():.0f}:R>.",
+            ]
+        )
 
         # detect if [procinfo] feature is installed
         if psutil:
@@ -97,9 +106,9 @@ class RootCommand(Feature):
                 with proc.oneshot():
                     try:
                         mem = proc.memory_full_info()
-                        summary.append(f"Using {natural_size(mem.rss)} physical memory and "
-                                       f"{natural_size(mem.vms)} virtual memory, "
-                                       f"{natural_size(mem.uss)} of which unique to this process.")
+                        field.append(f"Using {natural_size(mem.rss)} physical memory and "
+                                     f"{natural_size(mem.vms)} virtual memory, "
+                                     f"{natural_size(mem.uss)} of which unique to this process.")
                     except psutil.AccessDenied:
                         pass
 
@@ -108,44 +117,46 @@ class RootCommand(Feature):
                         pid = proc.pid
                         thread_count = proc.num_threads()
 
-                        summary.append(f"Running on PID {pid} (`{name}`) with {thread_count} thread(s).")
+                        field.append(f"Running on PID {pid} (`{name}`) with {thread_count} thread(s).")
                     except psutil.AccessDenied:
                         pass
 
-                    summary.append("")  # blank line
             except psutil.AccessDenied:
-                summary.append(
+                field.append(
                     "psutil is installed, but this process does not have high enough access rights "
                     "to query process information."
                 )
-                summary.append("")  # blank line
+
+            flush_field("Usage")
 
         cache_summary = f"{len(self.bot.guilds)} guild(s) and {len(self.bot.users)} user(s)"
 
         # Show shard settings to summary
         if isinstance(self.bot, discord.AutoShardedClient):
             if len(self.bot.shards) > 20:
-                summary.append(
+                field.append(
                     f"This bot is automatically sharded ({len(self.bot.shards)} shards of {self.bot.shard_count})"
                     f" and can see {cache_summary}."
                 )
             else:
                 shard_ids = ', '.join(str(i) for i in self.bot.shards.keys())
-                summary.append(
+                field.append(
                     f"This bot is automatically sharded (Shards {shard_ids} of {self.bot.shard_count})"
                     f" and can see {cache_summary}."
                 )
         elif self.bot.shard_count:
-            summary.append(
+            field.append(
                 f"This bot is manually sharded (Shard {self.bot.shard_id} of {self.bot.shard_count})"
                 f" and can see {cache_summary}."
             )
         else:
-            summary.append(f"This bot is not sharded and can see {cache_summary}.")
+            field.append(f"This bot is not sharded and can see {cache_summary}.")
+
+        flush_field("Sharding")
 
         # pylint: disable=protected-access
         if self.bot._connection.max_messages:
-            message_cache = f"Message cache capped at {self.bot._connection.max_messages}"
+            message_cache = f"Message cache is capped at {self.bot._connection.max_messages}"
         else:
             message_cache = "Message cache is disabled"
 
@@ -153,18 +164,20 @@ class RootCommand(Feature):
             presence_intent = f"presence intent is {'enabled' if self.bot.intents.presences else 'disabled'}"
             members_intent = f"guild members intent is {'enabled' if self.bot.intents.members else 'disabled'}"
 
-            summary.append(f"{message_cache}, {members_intent}, and {presence_intent}.")
+            field.append(f"{message_cache}, {members_intent}, and {presence_intent}.")
         else:
             guild_subscriptions = f"guild subscriptions are {'enabled' if self.bot._connection.guild_subscriptions else 'disabled'}"
 
-            summary.append(f"{message_cache} and {guild_subscriptions}.")
+            field.append(f"{message_cache} and {guild_subscriptions}.")
+
+        flush_field("Caching")
 
         # pylint: enable=protected-access
 
         # Show websocket latency in milliseconds
-        summary.append(f"Average websocket latency: {round(self.bot.latency * 1000, 2)}ms")
+        embed.set_footer(text=f"Average websocket latency: *{round(self.bot.latency * 1000, 2)}ms*")
 
-        await ctx.send("\n".join(summary))
+        await ctx.send(embed=embed)
 
     @Feature.Command(parent="jsk", name="tasks")
     async def jsk_tasks(self, ctx: commands.Context):
