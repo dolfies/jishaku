@@ -82,7 +82,7 @@ class RootCommand(Feature):
             dist_version = f'unknown `{discord.__version__}`'
 
         summary = [
-            f"Jishaku v{package_version('jishaku')}, {dist_version}, "
+            f"Custom Jishaku v{package_version('jishaku')}, {dist_version}, "
             f"`Python {sys.version}` on `{sys.platform}`".replace("\n", ""),
             f"Module was loaded <t:{self.load_time.timestamp():.0f}:R>, "
             f"cog was loaded <t:{self.start_time.timestamp():.0f}:R>.",
@@ -151,9 +151,9 @@ class RootCommand(Feature):
 
         if discord.version_info >= (1, 5, 0):
             presence_intent = f"presence intent is {'enabled' if self.bot.intents.presences else 'disabled'}"
-            members_intent = f"members intent is {'enabled' if self.bot.intents.members else 'disabled'}"
+            members_intent = f"guild members intent is {'enabled' if self.bot.intents.members else 'disabled'}"
 
-            summary.append(f"{message_cache}, {presence_intent} and {members_intent}.")
+            summary.append(f"{message_cache}, {members_intent}, and {presence_intent}.")
         else:
             guild_subscriptions = f"guild subscriptions are {'enabled' if self.bot._connection.guild_subscriptions else 'disabled'}"
 
@@ -165,32 +165,6 @@ class RootCommand(Feature):
         summary.append(f"Average websocket latency: {round(self.bot.latency * 1000, 2)}ms")
 
         await ctx.send("\n".join(summary))
-
-    # pylint: disable=no-member
-    @Feature.Command(parent="jsk", name="hide")
-    async def jsk_hide(self, ctx: commands.Context):
-        """
-        Hides Jishaku from the help command.
-        """
-
-        if self.jsk.hidden:
-            return await ctx.send("Jishaku is already hidden.")
-
-        self.jsk.hidden = True
-        await ctx.send("Jishaku is now hidden.")
-
-    @Feature.Command(parent="jsk", name="show")
-    async def jsk_show(self, ctx: commands.Context):
-        """
-        Shows Jishaku in the help command.
-        """
-
-        if not self.jsk.hidden:
-            return await ctx.send("Jishaku is already visible.")
-
-        self.jsk.hidden = False
-        await ctx.send("Jishaku is now visible.")
-    # pylint: enable=no-member
 
     @Feature.Command(parent="jsk", name="tasks")
     async def jsk_tasks(self, ctx: commands.Context):
