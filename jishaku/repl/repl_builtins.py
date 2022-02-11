@@ -11,67 +11,31 @@ Builtin functions and variables within Jishaku REPL contexts.
 
 """
 
+from typing import Union
+
 import aiohttp
 import discord
 from discord.ext import commands
 
 
-async def http_get_bytes(*args, **kwargs) -> bytes:
+async def request(*args, **kwargs) -> Union[bytes, dict]:
     """
-    Performs a HTTP GET request against a URL, returning the response payload as bytes.
-
-    The arguments to pass are the same as :func:`aiohttp.ClientSession.get`.
-    """
-
-    async with aiohttp.ClientSession() as session:
-        async with session.get(*args, **kwargs) as response:
-            response.raise_for_status()
-
-            return await response.read()
-
-
-async def http_get_json(*args, **kwargs) -> dict:
-    """
-    Performs a HTTP GET request against a URL,
+    Performs a request against a URL,
     returning the response payload as a dictionary of the response payload interpreted as JSON.
 
-    The arguments to pass are the same as :func:`aiohttp.ClientSession.get`.
+    The arguments to pass are the same as :func:`aiohttp.ClientSession.post`,
+    with an additional ``json`` bool which indicates whether to return the result as JSON (defaults to ``True``).
     """
+
+    json = kwargs.pop('json', True)
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(*args, **kwargs) as response:
+        async with session.request(*args, **kwargs) as response:
             response.raise_for_status()
 
-            return await response.json()
-
-
-async def http_post_bytes(*args, **kwargs) -> bytes:
-    """
-    Performs a HTTP POST request against a URL, returning the response payload as bytes.
-
-    The arguments to pass are the same as :func:`aiohttp.ClientSession.post`.
-    """
-
-    async with aiohttp.ClientSession() as session:
-        async with session.post(*args, **kwargs) as response:
-            response.raise_for_status()
-
+            if json:
+                return await response.json()
             return await response.read()
-
-
-async def http_post_json(*args, **kwargs) -> dict:
-    """
-    Performs a HTTP POST request against a URL,
-    returning the response payload as a dictionary of the response payload interpreted as JSON.
-
-    The arguments to pass are the same as :func:`aiohttp.ClientSession.post`.
-    """
-
-    async with aiohttp.ClientSession() as session:
-        async with session.post(*args, **kwargs) as response:
-            response.raise_for_status()
-
-            return await response.json()
 
 
 def get_var_dict_from_ctx(ctx: commands.Context, prefix: str = '_'):
@@ -83,16 +47,15 @@ def get_var_dict_from_ctx(ctx: commands.Context, prefix: str = '_'):
         'author': ctx.author,
         'bot': ctx.bot,
         'channel': ctx.channel,
+        'client': ctx.bot,
         'ctx': ctx,
         'find': discord.utils.find,
         'get': discord.utils.get,
         'guild': ctx.guild,
-        'http_get_bytes': http_get_bytes,
-        'http_get_json': http_get_json,
-        'http_post_bytes': http_post_bytes,
-        'http_post_json': http_post_json,
         'message': ctx.message,
-        'msg': ctx.message
+        'msg': ctx.message,
+        'request': request,
+        'user': ctx.bot.user,
     }
 
     return {f'{prefix}{k}': v for k, v in raw_var_dict.items()}
