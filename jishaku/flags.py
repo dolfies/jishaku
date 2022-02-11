@@ -105,23 +105,23 @@ class Flags(metaclass=FlagMeta):  # pylint: disable=too-few-public-methods
     """
 
     # Flag to indicate the Jishaku base command group should be hidden
-    HIDE: bool
+    HIDE: bool = True
 
     # Flag to indicate that retention mode for REPL should be enabled by default
     RETAIN: bool
 
     # Flag to indicate that meta variables in REPL should not be prefixed with an underscore
-    NO_UNDERSCORE: bool
+    NO_UNDERSCORE: bool = True
 
     # The scope prefix, i.e. the prefix that appears before Jishaku's builtin variables in REPL sessions.
     # It is recommended that you set this programatically.
-    SCOPE_PREFIX: str = lambda flags: '' if flags.NO_UNDERSCORE else '_'
+    SCOPE_PREFIX: str = lambda flags: '' if flags.NO_UNDERSCORE else '_'  # type: ignore
 
     # Flag to indicate whether to always use paginators over relying on Discord's file preview
     FORCE_PAGINATOR: bool
 
     # Flag to indicate verbose error tracebacks should be sent to the invoking channel as opposed to via direct message.
-    NO_DM_TRACEBACK: bool
+    NO_DM_TRACEBACK: bool = True
 
     # Flag to indicate usage of braille J in shutdown command
     USE_BRAILLE_J: bool
