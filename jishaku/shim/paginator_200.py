@@ -163,7 +163,6 @@ class PaginatorInterface(ui.View):  # pylint: disable=too-many-instance-attribut
         self.button_current.label = str(self.display_page + 1)
         self.button_next.label = self.emojis.forward
         self.button_last.label = f"{self.emojis.end} \u200b {self.page_count}"
-        self.button_close.label = f"{self.emojis.close} \u200b Close paginator"
 
     async def add_line(self, *args, **kwargs):
         """
@@ -301,16 +300,6 @@ class PaginatorInterface(ui.View):  # pylint: disable=too-many-instance-attribut
         self._display_page = self.page_count - 1
         self.update_view()
         await interaction.response.edit_message(**self.send_kwargs)
-
-    @ui.button(label="\N{BLACK SQUARE FOR STOP} \u200b Close paginator", style=discord.ButtonStyle.danger)
-    async def button_close(self, button: ui.Button, interaction: discord.Interaction):  # pylint: disable=unused-argument
-        """Button to close the interface"""
-
-        message = self.message
-        self.message = None
-        self.task.cancel()
-        self.stop()
-        await message.delete()
 
 
 class PaginatorEmbedInterface(PaginatorInterface):
