@@ -91,7 +91,7 @@ class RootCommand(Feature):
 
         embed.description = "\n".join(
             [
-                f"Jishaku `{str(package_version('jishaku')).split('+')[0]}` on {dist_version}",
+                f"Jishaku `{package_version('jishaku')}` on {dist_version}",
                 f"Python `{sys.version}` on `{sys.platform}`".replace("\n", ""),
                 f"Module was loaded <t:{self.load_time.timestamp():.0f}:R>, "
                 f"cog was loaded <t:{self.start_time.timestamp():.0f}:R>.",
