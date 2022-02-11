@@ -41,9 +41,9 @@ class ManagementFeature(Feature):
 
         paginator = WrappedPaginator(prefix='', suffix='')
 
-        # 'jsk reload' on its own just reloads jishaku
+        # 'jsk reload' on its own reloads all extensions
         if ctx.invoked_with == 'reload' and not extensions:
-            extensions = [['jishaku']]
+            extensions = self.bot.extensions
 
         for extension in itertools.chain(*extensions):
             method, icon = (
@@ -104,35 +104,6 @@ class ManagementFeature(Feature):
 
         await ctx.send(f"Logging out now{ellipse_character}")
         await ctx.bot.close()
-
-    @Feature.Command(parent="jsk", name="invite")
-    async def jsk_invite(self, ctx: commands.Context, *perms: str):
-        """
-        Retrieve the invite URL for this bot.
-
-        If the names of permissions are provided, they are requested as part of the invite.
-        """
-
-        scopes = ('bot', 'applications.commands')
-        permissions = discord.Permissions()
-
-        for perm in perms:
-            if perm not in dict(permissions):
-                raise commands.BadArgument(f"Invalid permission: {perm}")
-
-            setattr(permissions, perm, True)
-
-        application_info = await self.bot.application_info()
-
-        query = {
-            "client_id": application_info.id,
-            "scope": "+".join(scopes),
-            "permissions": permissions.value
-        }
-
-        return await ctx.send(
-            f"Link to invite this bot:\n<https://discordapp.com/oauth2/authorize?{urlencode(query, safe='+')}>"
-        )
 
     @Feature.Command(parent="jsk", name="rtt", aliases=["ping"])
     async def jsk_rtt(self, ctx: commands.Context):

@@ -16,6 +16,7 @@ from discord.ext import commands
 from jishaku.features.filesystem import FilesystemFeature
 from jishaku.features.guild import GuildFeature
 from jishaku.features.invocation import InvocationFeature
+from jishaku.features.management import ManagementFeature
 from jishaku.features.python import PythonFeature
 from jishaku.features.root_command import RootCommand
 from jishaku.features.shell import ShellFeature
@@ -27,7 +28,7 @@ __all__ = (
     "setup",
 )
 
-STANDARD_FEATURES = (GuildFeature, FilesystemFeature, InvocationFeature, ShellFeature, PythonFeature, RootCommand)
+STANDARD_FEATURES = (GuildFeature, FilesystemFeature, InvocationFeature, ManagementFeature, ShellFeature, PythonFeature, RootCommand)
 
 OPTIONAL_FEATURES = []
 
