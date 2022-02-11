@@ -72,7 +72,7 @@ class RootCommand(Feature):
 
         def flush_field(name: str):
             nonlocal field
-            embed.add_field(name=name, value="\n".join(field))
+            embed.add_field(name=name, value="\n".join(field), inline=False)
             field = []
 
         # Try to locate what vends the `discord` package
@@ -91,7 +91,7 @@ class RootCommand(Feature):
 
         embed.description = "\n".join(
             [
-                f"Custom Jishaku `v{package_version('jishaku')} ({dist_version})`",
+                f"Jishaku `{str(package_version('jishaku')).split('+')[0]}` on {dist_version}",
                 f"Python `{sys.version}` on `{sys.platform}`".replace("\n", ""),
                 f"Module was loaded <t:{self.load_time.timestamp():.0f}:R>, "
                 f"cog was loaded <t:{self.start_time.timestamp():.0f}:R>.",
@@ -175,7 +175,7 @@ class RootCommand(Feature):
         # pylint: enable=protected-access
 
         # Show websocket latency in milliseconds
-        embed.set_footer(text=f"Average websocket latency: *{round(self.bot.latency * 1000, 2)}ms*")
+        embed.set_footer(text=f"Average websocket latency: {round(self.bot.latency * 1000, 2)}ms")
 
         await ctx.send(embed=embed)
 
