@@ -43,7 +43,7 @@ class ManagementFeature(Feature):
 
         # 'jsk reload' on its own reloads all extensions
         if ctx.invoked_with == 'reload' and not extensions:
-            extensions = set(set(self.bot.extensions))
+            extensions = tuple(set(self.bot.extensions))
 
         for extension in itertools.chain(*extensions):
             method, icon = (
