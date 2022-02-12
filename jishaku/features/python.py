@@ -176,8 +176,9 @@ class PythonFeature(Feature):
             return
 
         banner = (
-            f"Python {sys.version.split('\n')[0]} on {sys.platform}\n"
+            "Python %s on %s\n"
             "Type \"help\", \"copyright\", \"credits\" or \"license\" for more information."
+            % (sys.version.split("\n")[0], sys.platform)
         )
         self.repl_sessions.add(ctx.channel.id)
         await ctx.send(banner)
