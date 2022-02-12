@@ -14,6 +14,7 @@ The jishaku Python evaluation/execution commands.
 import asyncio
 import inspect
 import io
+import sys
 
 import discord
 from discord.ext import commands
@@ -37,7 +38,7 @@ class PythonFeature(Feature):
         self._scope = Scope()
         self.retain = Flags.RETAIN
         self.last_result = None
-        self.sessions = set()
+        self.repl_sessions = set()
 
     @property
     def scope(self):
@@ -162,20 +163,24 @@ class PythonFeature(Feature):
     @Feature.Command(parent="jsk", name="repl")
     async def jsk_repl(self, ctx: commands.Context):
         """
-        Launches an interactive REPL session.
-        Based on R.Danny's implementation (https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/admin.py).
+        Launches a Python interactive shell.
+        Inspired by R.Danny's implementation (https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/admin.py).
         """
         arg_dict = get_var_dict_from_ctx(ctx, Flags.SCOPE_PREFIX)
         arg_dict["_"] = self.last_result
 
         scope = self.scope
 
-        if ctx.channel.id in self.sessions:
-            await ctx.send("Already running a REPL session in this channel. Exit it with `exit()` or `quit()`.")
+        if ctx.channel.id in self.repl_sessions:
+            await ctx.send("Already running an interactive shell in this channel. Use `exit()` or `quit()` to exit.")
             return
 
-        self.sessions.add(ctx.channel.id)
-        await ctx.send("Enter code to execute or evaluate, `exit()` or `quit()` to exit.")
+        banner = (
+            f"Python {sys.version.split('\n')[0]} on {sys.platform}\n"
+            "Type \"help\", \"copyright\", \"credits\" or \"license\" for more information."
+        )
+        self.repl_sessions.add(ctx.channel.id)
+        await ctx.send(banner)
 
         def check(m):
             return m.author.id == ctx.author.id and \
@@ -187,15 +192,18 @@ class PythonFeature(Feature):
                 response = await self.bot.wait_for("message", check=check, timeout=10.0 * 60.0)
             except asyncio.TimeoutError:
                 await ctx.send("Exiting...")
-                self.sessions.remove(ctx.channel.id)
+                self.repl_sessions.remove(ctx.channel.id)
                 break
 
             argument = codeblock_converter(response.content)
 
-            if argument.content in ("quit", "exit", "exit()", "quit()"):
+            if argument.content in ("exit()", "quit()"):
                 await ctx.send("Exiting...")
-                self.sessions.remove(ctx.channel.id)
+                self.repl_sessions.remove(ctx.channel.id)
                 return
+            elif argument.content in ("exit", "quit"):
+                await ctx.send(f"Use `{argument.content}()` to exit.")
+                continue
 
             arg_dict["message"] = arg_dict["msg"] = response
 
