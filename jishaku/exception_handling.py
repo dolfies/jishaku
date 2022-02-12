@@ -96,7 +96,8 @@ class ReactionProcedureTimer:  # pylint: disable=too-few-public-methods
         self.react = react
 
     async def __aenter__(self):
-        self.handle = self.loop.create_task(do_after_sleep(1, attempt_add_reaction, self.message,
+        if self.react:
+            self.handle = self.loop.create_task(do_after_sleep(1, attempt_add_reaction, self.message,
                                                            "\N{BLACK RIGHT-POINTING TRIANGLE}"))
         return self
 
