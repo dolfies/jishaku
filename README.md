@@ -44,6 +44,8 @@ a debugging and utility extension for discord.py bots
 
 jishaku is an extension for bot developers that enables rapid prototyping, experimentation, and debugging of features for bots.
 
+This is a fork I use to remove/modify things I don't like, and work on new features.
+
 One of jishaku's core philosophies is to be dynamic and easy-to-use. Here's the two step install:
 
 > 1. Download jishaku on the command line using pip:
@@ -245,11 +247,11 @@ If you'd like to test the latest versions of jishaku, you can do so by downloadi
 
 > From GitHub:
 > ```bash
-> pip install -U "jishaku @ git+https://github.com/Gorialis/jishaku@master"
+> pip install -U "jishaku @ git+https://github.com/dolfies/jishaku@master"
 > ```
 > From GitLab:
 > ```bash
-> pip install -U "jishaku @ git+https://gitlab.com/Gorialis/jishaku@master"
+> pip install -U "jishaku @ git+https://gitlab.com/dolfies/jishaku@master"
 > ```
 
 Please note that the new 2020 dependency resolver now no longer discounts git package sources from reinstall prevention,
@@ -259,11 +261,11 @@ If you run into such a problem, you can force jishaku to be reinstalled like thi
 
 > From GitHub:
 > ```bash
-> pip install -U --force-reinstall "jishaku @ git+https://github.com/Gorialis/jishaku@master"
+> pip install -U --force-reinstall "jishaku @ git+https://github.com/dolfies/jishaku@master"
 > ```
 > From GitLab:
 > ```bash
-> pip install -U --force-reinstall "jishaku @ git+https://gitlab.com/Gorialis/jishaku@master"
+> pip install -U --force-reinstall "jishaku @ git+https://gitlab.com/dolfies/jishaku@master"
 > ```
 
 You **must** have installed jishaku with one of the commands above before doing this else you will probably end up with a broken installation.
