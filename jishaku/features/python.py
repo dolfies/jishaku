@@ -163,7 +163,7 @@ class PythonFeature(Feature):
     @Feature.Command(parent="jsk", name="repl")
     async def jsk_repl(self, ctx: commands.Context):
         """
-        Launches a Python interactive shell.
+        Launches a Python interactive shell in the current channel. Messages not starting with "`" will be ignored.
         Inspired by R.Danny's implementation (https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/admin.py).
         """
         arg_dict = get_var_dict_from_ctx(ctx, Flags.SCOPE_PREFIX)
