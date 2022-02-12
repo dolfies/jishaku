@@ -50,7 +50,7 @@ One of jishaku's core philosophies is to be dynamic and easy-to-use. Here's the 
 
 > 1. Download jishaku on the command line using pip:
 > ```bash
-> pip install -U jishaku
+> pip install -U git+https://github.com/dolfies/jishaku@master
 > ```
 > 2. Load the extension in your bot code before it runs:
 > ```python
