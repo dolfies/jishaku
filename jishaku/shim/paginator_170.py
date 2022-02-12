@@ -182,9 +182,6 @@ class PaginatorInterface:  # pylint: disable=too-many-instance-attributes
             **self.send_kwargs, allowed_mentions=discord.AllowedMentions.none()
         )
 
-        # add the close reaction
-        await self.message.add_reaction(self.emojis.close)
-
         self.send_lock.set()
 
         if self.task:

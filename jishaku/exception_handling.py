@@ -86,13 +86,14 @@ class ReactionProcedureTimer:  # pylint: disable=too-few-public-methods
     """
     Class that reacts to a message based on what happens during its lifetime.
     """
-    __slots__ = ('message', 'loop', 'handle', 'raised')
+    __slots__ = ('message', 'loop', 'handle', 'raised', 'react')
 
-    def __init__(self, message: discord.Message, loop: typing.Optional[asyncio.BaseEventLoop] = None):
+    def __init__(self, message: discord.Message, loop: typing.Optional[asyncio.BaseEventLoop] = None, react: bool = True):
         self.message = message
         self.loop = loop or asyncio.get_event_loop()
         self.handle = None
         self.raised = False
+        self.react = react
 
     async def __aenter__(self):
         self.handle = self.loop.create_task(do_after_sleep(1, attempt_add_reaction, self.message,
@@ -103,12 +104,17 @@ class ReactionProcedureTimer:  # pylint: disable=too-few-public-methods
         if self.handle:
             self.handle.cancel()
 
+        react = self.react
+
         # no exception, check mark
-        if not exc_val:
+        if not exc_val and react:
             await attempt_add_reaction(self.message, "\N{WHITE HEAVY CHECK MARK}")
             return
 
         self.raised = True
+
+        if not react:
+            return
 
         if isinstance(exc_val, (asyncio.TimeoutError, subprocess.TimeoutExpired)):
             # timed out, alarm clock

@@ -11,6 +11,7 @@ The jishaku Python evaluation/execution commands.
 
 """
 
+import asyncio
 import inspect
 import io
 
@@ -36,6 +37,7 @@ class PythonFeature(Feature):
         self._scope = Scope()
         self.retain = Flags.RETAIN
         self.last_result = None
+        self.sessions = set()
 
     @property
     def scope(self):
@@ -156,6 +158,61 @@ class PythonFeature(Feature):
 
         finally:
             scope.clear_intersection(arg_dict)
+
+    @Feature.Command(parent="jsk", name="repl")
+    async def jsk_repl(self, ctx: commands.Context):
+        """
+        Launches an interactive REPL session.
+        Based on R.Danny's implementation (https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/admin.py).
+        """
+        arg_dict = get_var_dict_from_ctx(ctx, Flags.SCOPE_PREFIX)
+        arg_dict["_"] = self.last_result
+
+        scope = self.scope
+
+        if ctx.channel.id in self.sessions:
+            await ctx.send("Already running a REPL session in this channel. Exit it with `exit()` or `quit()`.")
+            return
+
+        self.sessions.add(ctx.channel.id)
+        await ctx.send("Enter code to execute or evaluate, `exit()` or `quit()` to exit.")
+
+        def check(m):
+            return m.author.id == ctx.author.id and \
+                   m.channel.id == ctx.channel.id and \
+                   m.content.startswith("`")
+
+        while True:
+            try:
+                response = await self.bot.wait_for("message", check=check, timeout=10.0 * 60.0)
+            except asyncio.TimeoutError:
+                await ctx.send("Exiting...")
+                self.sessions.remove(ctx.channel.id)
+                break
+
+            argument = codeblock_converter(response.content)
+
+            if argument.content in ("quit", "exit", "exit()", "quit()"):
+                await ctx.send("Exiting...")
+                self.sessions.remove(ctx.channel.id)
+                return
+
+            arg_dict["message"] = arg_dict["msg"] = response
+
+            try:
+                async with ReplResponseReactor(ctx.message, react=False):
+                    with self.submit(ctx):
+                        executor = AsyncCodeExecutor(argument.content, scope, arg_dict=arg_dict)
+                        async for send, result in AsyncSender(executor):
+                            if result is None:
+                                continue
+
+                            self.last_result = result
+
+                            send(await self.jsk_python_result_handling(ctx, result))
+
+            finally:
+                scope.clear_intersection(arg_dict)
 
     @Feature.Command(parent="jsk", name="py_inspect", aliases=["pyi", "python_inspect", "pythoninspect"])
     async def jsk_python_inspect(self, ctx: commands.Context, *, argument: codeblock_converter):
