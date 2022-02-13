@@ -21,7 +21,7 @@ from discord.ext import commands
 from jishaku.features.baseclass import Feature
 from jishaku.flags import Flags
 from jishaku.modules import package_version
-from jishaku.paginators import PaginatorInterface
+from jishaku.paginators import PaginatorEmbedInterface
 
 try:
     import psutil
@@ -188,13 +188,13 @@ class RootCommand(Feature):
         if not self.tasks:
             return await ctx.send("No currently running tasks.")
 
-        paginator = commands.Paginator(max_size=1985)
+        paginator = commands.Paginator(max_size=4000)
 
         for task in self.tasks:
             paginator.add_line(f"{task.index}: `{task.ctx.command.qualified_name}`, invoked at "
                                f"{task.ctx.message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
-        interface = PaginatorInterface(ctx.bot, paginator, owner=ctx.author)
+        interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
         return await interface.send_to(ctx)
 
     @Feature.Command(parent="jsk", name="cancel")

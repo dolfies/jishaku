@@ -23,7 +23,7 @@ from discord.ext import commands
 from jishaku.exception_handling import ReplResponseReactor
 from jishaku.features.baseclass import Feature
 from jishaku.hljs import get_language, guess_file_traits
-from jishaku.paginators import PaginatorInterface, WrappedFilePaginator, use_file_check
+from jishaku.paginators import PaginatorEmbedInterface, WrappedFilePaginator, use_file_check
 
 
 class FilesystemFeature(Feature):
@@ -84,8 +84,8 @@ class FilesystemFeature(Feature):
                             fp=file
                         ))
                 else:
-                    paginator = WrappedFilePaginator(file, line_span=line_span, max_size=1985)
-                    interface = PaginatorInterface(ctx.bot, paginator, owner=ctx.author)
+                    paginator = WrappedFilePaginator(file, line_span=line_span, max_size=4000)
+                    interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
                     await interface.send_to(ctx)
         except UnicodeDecodeError:
             return await ctx.send(f"`{path}`: Couldn't determine the encoding of this file.")
@@ -103,7 +103,7 @@ class FilesystemFeature(Feature):
         # remove embed maskers if present
         url = url.lstrip("<").rstrip(">")
 
-        async with ReplResponseReactor(ctx.message):
+        async with ReplResponseReactor(ctx.bot, ctx.message):
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
                     data = await response.read()
@@ -132,11 +132,11 @@ class FilesystemFeature(Feature):
                 ))
             else:
                 try:
-                    paginator = WrappedFilePaginator(io.BytesIO(data), language_hints=hints, max_size=1985)
+                    paginator = WrappedFilePaginator(io.BytesIO(data), language_hints=hints, max_size=4000)
                 except UnicodeDecodeError:
                     return await ctx.send(f"Couldn't determine the encoding of the response. (status code {code})")
                 except ValueError as exc:
                     return await ctx.send(f"Couldn't read response (status code {code}), {exc}")
 
-                interface = PaginatorInterface(ctx.bot, paginator, owner=ctx.author)
+                interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
                 await interface.send_to(ctx)

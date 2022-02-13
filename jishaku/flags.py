@@ -118,10 +118,13 @@ class Flags(metaclass=FlagMeta):  # pylint: disable=too-few-public-methods
     SCOPE_PREFIX: str = lambda flags: '' if flags.NO_UNDERSCORE else '_'  # type: ignore
 
     # Flag to indicate whether to always use paginators over relying on Discord's file preview
-    FORCE_PAGINATOR: bool
+    FORCE_PAGINATOR: bool = True
 
     # Flag to indicate verbose error tracebacks should be sent to the invoking channel as opposed to via direct message.
     NO_DM_TRACEBACK: bool = True
 
     # Flag to indicate usage of braille J in shutdown command
     USE_BRAILLE_J: bool
+
+    # Flag to indicate whether to react with success/failure emojis
+    NO_REACTION: bool

@@ -308,7 +308,7 @@ class PaginatorEmbedInterface(PaginatorInterface):
     """
 
     def __init__(self, *args, **kwargs):
-        self._embed = kwargs.pop('embed', None) or discord.Embed()
+        self._embed = kwargs.pop('embed', None) or discord.Embed(title="Result", color=discord.Colour.green())
         super().__init__(*args, **kwargs)
 
     @property
@@ -316,7 +316,7 @@ class PaginatorEmbedInterface(PaginatorInterface):
         self._embed.description = self.pages[self.display_page]
         return {'embed': self._embed, 'view': self}
 
-    max_page_size = 2048
+    max_page_size = 4096
 
     @property
     def page_size(self) -> int:

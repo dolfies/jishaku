@@ -149,7 +149,7 @@ class WrappedFilePaginator(FilePaginator, WrappedPaginator):
 
 def use_file_check(ctx: commands.Context, size: int) -> bool:
     """
-    A check to determine if uploading a file and relying on Discord's file preview is acceptable over a PaginatorInterface.
+    A check to determine if uploading a file and relying on Discord's file preview is acceptable over a PaginatorEmbedInterface.
     """
 
     return all([

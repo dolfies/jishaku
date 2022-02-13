@@ -16,7 +16,7 @@ from discord.ext import commands
 from jishaku.codeblocks import Codeblock, codeblock_converter
 from jishaku.exception_handling import ReplResponseReactor
 from jishaku.features.baseclass import Feature
-from jishaku.paginators import PaginatorInterface, WrappedPaginator
+from jishaku.paginators import PaginatorEmbedInterface, WrappedPaginator
 from jishaku.shell import ShellReader
 
 
@@ -37,15 +37,15 @@ class ShellFeature(Feature):
         # Don't use the new ANSI mode if the user is detectably on mobile
         on_mobile = ctx.author.is_on_mobile() if ctx.guild and ctx.bot.intents.presences else False
 
-        async with ReplResponseReactor(ctx.message):
+        async with ReplResponseReactor(ctx.bot, ctx.message):
             with self.submit(ctx):
                 with ShellReader(argument.content, escape_ansi=on_mobile) as reader:
                     prefix = "```" + reader.highlight
 
-                    paginator = WrappedPaginator(prefix=prefix, max_size=1975)
+                    paginator = WrappedPaginator(prefix=prefix, max_size=4000)
                     paginator.add_line(f"{reader.ps1} {argument.content}\n")
 
-                    interface = PaginatorInterface(ctx.bot, paginator, owner=ctx.author)
+                    interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
                     self.bot.loop.create_task(interface.send_to(ctx))
 
                     async for line in reader:

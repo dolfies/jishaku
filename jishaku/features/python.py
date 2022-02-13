@@ -24,7 +24,7 @@ from jishaku.exception_handling import ReplResponseReactor
 from jishaku.features.baseclass import Feature
 from jishaku.flags import Flags
 from jishaku.functools import AsyncSender
-from jishaku.paginators import PaginatorInterface, WrappedPaginator, use_file_check
+from jishaku.paginators import PaginatorEmbedInterface, WrappedPaginator, use_file_check
 from jishaku.repl import AsyncCodeExecutor, Scope, all_inspections, disassemble, get_var_dict_from_ctx
 
 
@@ -97,7 +97,7 @@ class PythonFeature(Feature):
         if isinstance(result, discord.Embed):
             return await ctx.send(embed=result)
 
-        if isinstance(result, PaginatorInterface):
+        if isinstance(result, PaginatorEmbedInterface):
             return await result.send_to(ctx)
 
         if not isinstance(result, str):
@@ -105,12 +105,14 @@ class PythonFeature(Feature):
             result = repr(result)
 
         # Eventually the below handling should probably be put somewhere else
-        if len(result) <= 2000:
+        if len(result) <= 4086:
             if result.strip() == '':
                 result = "\u200b"
 
+            embed = discord.Embed(title="Result", color=discord.Colour.green(), description=f"```py\n{result.replace(self.bot.http.token, '[token omitted]')}\n```")
+
             return await ctx.send(
-                result.replace(self.bot.http.token, "[token omitted]"),
+                embed=embed,
                 allowed_mentions=discord.AllowedMentions.none()
             )
 
@@ -118,20 +120,18 @@ class PythonFeature(Feature):
             # Discord's desktop and web client now supports an interactive file content
             #  display for files encoded in UTF-8.
             # Since this avoids escape issues and is more intuitive than pagination for
-            #  long results, it will now be prioritized over PaginatorInterface if the
+            #  long results, it will now be prioritized over PaginatorEmbedInterface if the
             #  resultant content is below the filesize threshold
             return await ctx.send(file=discord.File(
                 filename="output.py",
                 fp=io.BytesIO(result.encode('utf-8'))
             ))
 
-        # inconsistency here, results get wrapped in codeblocks when they are too large
-        #  but don't if they're not. probably not that bad, but noting for later review
-        paginator = WrappedPaginator(prefix='```py', suffix='```', max_size=1985)
+        paginator = WrappedPaginator(prefix='```py', suffix='```', max_size=4000)
 
         paginator.add_line(result)
 
-        interface = PaginatorInterface(ctx.bot, paginator, owner=ctx.author)
+        interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
         return await interface.send_to(ctx)
 
     @Feature.Command(parent="jsk", name="py", aliases=["python", "eval"])
@@ -146,7 +146,7 @@ class PythonFeature(Feature):
         scope = self.scope
 
         try:
-            async with ReplResponseReactor(ctx.message):
+            async with ReplResponseReactor(ctx.bot, ctx.message):
                 with self.submit(ctx):
                     executor = AsyncCodeExecutor(argument.content, scope, arg_dict=arg_dict)
                     async for send, result in AsyncSender(executor):
@@ -210,7 +210,7 @@ class PythonFeature(Feature):
             arg_dict["message"] = arg_dict["msg"] = response
 
             try:
-                async with ReplResponseReactor(ctx.message, react=False):
+                async with ReplResponseReactor(ctx.bot, response):
                     with self.submit(ctx):
                         executor = AsyncCodeExecutor(argument.content, scope, arg_dict=arg_dict)
                         async for send, result in AsyncSender(executor):
@@ -236,7 +236,7 @@ class PythonFeature(Feature):
         scope = self.scope
 
         try:
-            async with ReplResponseReactor(ctx.message):
+            async with ReplResponseReactor(ctx.bot, ctx.message):
                 with self.submit(ctx):
                     executor = AsyncCodeExecutor(argument.content, scope, arg_dict=arg_dict)
                     async for send, result in AsyncSender(executor):
@@ -265,11 +265,11 @@ class PythonFeature(Feature):
                                 fp=io.BytesIO(text.encode('utf-8'))
                             )))
                         else:
-                            paginator = WrappedPaginator(prefix="```prolog", max_size=1985)
+                            paginator = WrappedPaginator(prefix="```prolog", max_size=4000)
 
                             paginator.add_line(text)
 
-                            interface = PaginatorInterface(ctx.bot, paginator, owner=ctx.author)
+                            interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
                             send(await interface.send_to(ctx))
         finally:
             scope.clear_intersection(arg_dict)
@@ -282,7 +282,7 @@ class PythonFeature(Feature):
 
         arg_dict = get_var_dict_from_ctx(ctx, Flags.SCOPE_PREFIX)
 
-        async with ReplResponseReactor(ctx.message):
+        async with ReplResponseReactor(ctx.bot, ctx.message):
             text = "\n".join(disassemble(argument.content, arg_dict=arg_dict))
 
             if use_file_check(ctx, len(text)):  # File "full content" preview limit
@@ -291,9 +291,9 @@ class PythonFeature(Feature):
                     fp=io.BytesIO(text.encode('utf-8'))
                 ))
             else:
-                paginator = WrappedPaginator(prefix='```py', max_size=1985)
+                paginator = WrappedPaginator(prefix='```py', max_size=4000)
 
                 paginator.add_line(text)
 
-                interface = PaginatorInterface(ctx.bot, paginator, owner=ctx.author)
+                interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
                 await interface.send_to(ctx)

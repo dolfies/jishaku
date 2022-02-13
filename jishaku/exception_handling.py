@@ -20,15 +20,17 @@ import discord
 from discord.ext import commands
 
 from jishaku.flags import Flags
+from jishaku.paginators import PaginatorEmbedInterface
 
 
-async def send_traceback(destination: discord.abc.Messageable, verbosity: int, *exc_info):
+async def send_traceback(bot: commands.Bot, destination: discord.Message, verbosity: int, send_to_author: bool, *exc_info):
     """
     Sends a traceback of an exception to a destination.
     Used when REPL fails for any reason.
 
     :param destination: Where to send this information to
     :param verbosity: How far back this traceback should go. 0 shows just the last stack.
+    :param send_to_author: Whether to send this to the author of the message.
     :param exc_info: Information about this exception, from sys.exc_info or similar.
     :return: The last message sent
     """
@@ -38,16 +40,17 @@ async def send_traceback(destination: discord.abc.Messageable, verbosity: int, *
 
     traceback_content = "".join(traceback.format_exception(etype, value, trace, verbosity)).replace("``", "`\u200b`")
 
-    paginator = commands.Paginator(prefix='```py')
+    channel = destination.author if send_to_author else destination.channel
+
+    if len(traceback_content) <= 4086:
+        return await channel.send(embed=discord.Embed(title="Error", color=discord.Colour.red(), description=f"```py\n{traceback_content}\n```"))
+
+    paginator = commands.Paginator(prefix='```py', max_size=4000)
     for line in traceback_content.split('\n'):
         paginator.add_line(line)
 
-    message = None
-
-    for page in paginator.pages:
-        message = await destination.send(page)
-
-    return message
+    interface = PaginatorEmbedInterface(bot, paginator, owner=destination.author, embed=discord.Embed(title="Error", color=discord.Colour.red()))
+    return await interface.send_to(channel)
 
 
 async def do_after_sleep(delay: float, coro, *args, **kwargs):
@@ -86,9 +89,10 @@ class ReactionProcedureTimer:  # pylint: disable=too-few-public-methods
     """
     Class that reacts to a message based on what happens during its lifetime.
     """
-    __slots__ = ('message', 'loop', 'handle', 'raised', 'react')
+    __slots__ = ('bot', 'message', 'loop', 'handle', 'raised', 'react')
 
-    def __init__(self, message: discord.Message, loop: typing.Optional[asyncio.BaseEventLoop] = None, react: bool = True):
+    def __init__(self, bot: commands.Bot, message: discord.Message, loop: typing.Optional[asyncio.BaseEventLoop] = None, react: bool = not Flags.NO_REACTION):
+        self.bot = bot
         self.message = message
         self.loop = loop or asyncio.get_event_loop()
         self.handle = None
@@ -142,12 +146,15 @@ class ReplResponseReactor(ReactionProcedureTimer):  # pylint: disable=too-few-pu
 
         if isinstance(exc_val, (SyntaxError, asyncio.TimeoutError, subprocess.TimeoutExpired)):
             # short traceback, send to channel
-            await send_traceback(self.message.channel, 0, exc_type, exc_val, exc_tb)
+            verbosity = 0
+            send_to_author = False
         else:
             # this traceback likely needs more info, so increase verbosity, and DM it instead.
-            await send_traceback(
-                self.message.channel if Flags.NO_DM_TRACEBACK else self.message.author,
-                8, exc_type, exc_val, exc_tb
-            )
+            verbosity = 8
+            send_to_author = False if Flags.NO_DM_TRACEBACK else True
+
+        await send_traceback(
+            self.bot, self.message, verbosity, send_to_author, exc_type, exc_val, exc_tb
+        )
 
         return True  # the exception has been handled
