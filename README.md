@@ -109,7 +109,7 @@ You can also import the module to use the command development utilities.
                     </td>
                 </tr>
                 <tr>
-                    <td><code>_bot</code></td>
+                    <td><code>_bot</code><br><code>_client</code></td>
                     <td>
                         The running <a href="https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot">Bot</a> instance.
                     </td>
