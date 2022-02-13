@@ -38,7 +38,7 @@ async def send_traceback(bot: commands.Bot, destination: discord.Message, verbos
     # to make pylint stop moaning
     etype, value, trace = exc_info
 
-    traceback_content = "".join(traceback.format_exception(etype, value, trace, verbosity)).replace("``", "`\u200b`")
+    traceback_content = "".join(traceback.format_exception(etype, value, trace, verbosity)).replace("``", "`\u200b`").replace(bot.http.token, "[token omitted]")
 
     channel = destination.author if send_to_author else destination.channel
 

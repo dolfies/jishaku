@@ -24,7 +24,7 @@ from jishaku.exception_handling import ReplResponseReactor
 from jishaku.features.baseclass import Feature
 from jishaku.flags import Flags
 from jishaku.functools import AsyncSender
-from jishaku.paginators import PaginatorEmbedInterface, WrappedPaginator, use_file_check
+from jishaku.paginators import PaginatorInterface, PaginatorEmbedInterface, WrappedPaginator, use_file_check
 from jishaku.repl import AsyncCodeExecutor, Scope, all_inspections, disassemble, get_var_dict_from_ctx
 
 
@@ -88,28 +88,27 @@ class PythonFeature(Feature):
         What you return is what gets stored in the temporary _ variable.
         """
 
-        if isinstance(result, discord.Message):
-            return await ctx.send(f"<Message <{result.jump_url}>>")
-
         if isinstance(result, discord.File):
             return await ctx.send(file=result)
 
         if isinstance(result, discord.Embed):
             return await ctx.send(embed=result)
 
-        if isinstance(result, PaginatorEmbedInterface):
+        if isinstance(result, PaginatorInterface):
             return await result.send_to(ctx)
 
         if not isinstance(result, str):
             # repr all non-strings
             result = repr(result)
 
+        result = result.replace(self.bot.http.token, '[token omitted]')
+
         # Eventually the below handling should probably be put somewhere else
         if len(result) <= 4086:
             if result.strip() == '':
                 result = "\u200b"
 
-            embed = discord.Embed(title="Result", color=discord.Colour.green(), description=f"```py\n{result.replace(self.bot.http.token, '[token omitted]')}\n```")
+            embed = discord.Embed(title="Result", color=discord.Colour.green(), description=f"```py\n{result}\n```")
 
             return await ctx.send(
                 embed=embed,
