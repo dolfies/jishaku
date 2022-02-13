@@ -14,6 +14,7 @@ Tools related to interacting directly with the shell.
 import asyncio
 import os
 import pathlib
+import platform
 import re
 import subprocess
 import sys
@@ -52,18 +53,18 @@ class ShellReader:
         if WINDOWS:
             # Check for powershell
             if pathlib.Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe").exists():
-                sequence = ['powershell', code]
-                self.ps1 = "PS >"
+                sequence = ["powershell", code]
+                self.ps1 = f"PS {str(pathlib.Path().resolve())}> "
                 self.highlight = "powershell"
             else:
-                sequence = ['cmd', '/c', code]
-                self.ps1 = "cmd >"
+                sequence = ["cmd", "/c", code]
+                self.ps1 = f"{str(pathlib.Path().resolve())}>"
                 self.highlight = "cmd"
             # Windows doesn't use ANSI codes
             self.escape_ansi = True
         else:
-            sequence = [SHELL, '-c', code]
-            self.ps1 = "$"
+            sequence = [SHELL, "-c", code]
+            self.ps1 = f"{os.getlogin()}@{platform.node()}:{str(pathlib.Path().resolve())}$ "
             self.highlight = "ansi"
             self.escape_ansi = escape_ansi
 

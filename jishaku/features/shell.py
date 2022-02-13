@@ -43,7 +43,7 @@ class ShellFeature(Feature):
                     prefix = "```" + reader.highlight
 
                     paginator = WrappedPaginator(prefix=prefix, max_size=4000)
-                    paginator.add_line(f"{reader.ps1} {argument.content}\n")
+                    paginator.add_line(f"{reader.ps1}{argument.content}\n")
 
                     interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
                     self.bot.loop.create_task(interface.send_to(ctx))
