@@ -258,8 +258,9 @@ class PaginatorInterface(ui.View):  # pylint: disable=too-many-instance-attribut
             else:
                 await self.message.edit(view=None)
 
-    async def interaction_check(self, item, interaction: discord.Interaction):
+    async def interaction_check(self, *args):
         """Check that determines whether this interaction should be honored"""
+        interaction: discord.Interaction = args[-1]
         return not self.owner or interaction.user.id == self.owner.id
 
     @ui.button(label="1 \u200b \N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", style=discord.ButtonStyle.secondary)
