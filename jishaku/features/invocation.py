@@ -25,7 +25,7 @@ from discord.ext import commands
 from jishaku.exception_handling import ReplResponseReactor
 from jishaku.features.baseclass import Feature
 from jishaku.models import copy_context_with
-from jishaku.paginators import PaginatorEmbedInterface, WrappedPaginator, use_file_check
+from jishaku.paginators import Interface, MAX_MESSAGE_SIZE, WrappedPaginator, use_file_check
 
 UserIDConverter = commands.IDConverter[discord.User] if discord.version_info >= (2, 0) else commands.IDConverter
 
@@ -179,9 +179,9 @@ class InvocationFeature(Feature):
                 fp=io.BytesIO(source_text.encode('utf-8'))
             ))
         else:
-            paginator = WrappedPaginator(prefix='```py', suffix='```', max_size=4000)
+            paginator = WrappedPaginator(prefix='```py', suffix='```', max_size=MAX_MESSAGE_SIZE - 20)
 
             paginator.add_line(source_text.replace('```', '``\N{zero width space}`'))
 
-            interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
+            interface = Interface(ctx.bot, paginator, owner=ctx.author)
             await interface.send_to(ctx)

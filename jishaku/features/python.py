@@ -24,7 +24,7 @@ from jishaku.exception_handling import ReplResponseReactor
 from jishaku.features.baseclass import Feature
 from jishaku.flags import Flags
 from jishaku.functools import AsyncSender
-from jishaku.paginators import PaginatorInterface, PaginatorEmbedInterface, WrappedPaginator, use_file_check
+from jishaku.paginators import Interface, PaginatorInterface, PaginatorEmbedInterface, MAX_MESSAGE_SIZE, WrappedPaginator, use_file_check
 from jishaku.repl import AsyncCodeExecutor, Scope, all_inspections, disassemble, get_var_dict_from_ctx
 
 
@@ -57,6 +57,7 @@ class PythonFeature(Feature):
     async def jsk_retain(self, ctx: commands.Context, *, toggle: bool = None):
         """
         Turn variable retention for REPL on or off.
+        This does not affect the `jsk repl` command.
 
         Provide no argument for current status.
         """
@@ -88,13 +89,16 @@ class PythonFeature(Feature):
         What you return is what gets stored in the temporary _ variable.
         """
 
+        if isinstance(result, discord.Message) and Flags.REPLACE_MESSAGES:
+            result = "<Message <{result.jump_url}>>"
+
         if isinstance(result, discord.File):
             return await ctx.send(file=result)
 
         if isinstance(result, discord.Embed):
             return await ctx.send(embed=result)
 
-        if isinstance(result, PaginatorInterface):
+        if isinstance(result, (Interface, PaginatorInterface, PaginatorEmbedInterface)):
             return await result.send_to(ctx)
 
         if not isinstance(result, str):
@@ -104,33 +108,38 @@ class PythonFeature(Feature):
         result = result.replace(self.bot.http.token, '[token omitted]')
 
         # Eventually the below handling should probably be put somewhere else
-        if len(result) <= 4086:
+        if len(result) <= MAX_MESSAGE_SIZE - 10:
             if result.strip() == '':
                 result = "\u200b"
 
-            embed = discord.Embed(title="Result", color=discord.Colour.green(), description=f"```py\n{result}\n```")
-
-            return await ctx.send(
-                embed=embed,
-                allowed_mentions=discord.AllowedMentions.none()
-            )
+            if Flags.NO_EMBEDS:
+                return await ctx.send(
+                    f"```py\n{result}\n```",
+                    allowed_mentions=discord.AllowedMentions.none()
+                )
+            else:
+                embed = discord.Embed(title="Result", color=discord.Colour.green(), description=f"```py\n{result}\n```")
+                return await ctx.send(
+                    embed=embed,
+                    allowed_mentions=discord.AllowedMentions.none()
+                )
 
         if use_file_check(ctx, len(result)):  # File "full content" preview limit
             # Discord's desktop and web client now supports an interactive file content
             #  display for files encoded in UTF-8.
             # Since this avoids escape issues and is more intuitive than pagination for
-            #  long results, it will now be prioritized over PaginatorEmbedInterface if the
+            #  long results, it will now be prioritized over Interface if the
             #  resultant content is below the filesize threshold
             return await ctx.send(file=discord.File(
                 filename="output.py",
                 fp=io.BytesIO(result.encode('utf-8'))
             ))
 
-        paginator = WrappedPaginator(prefix='```py', suffix='```', max_size=4000)
+        paginator = WrappedPaginator(prefix='```py', suffix='```', max_size=MAX_MESSAGE_SIZE - 20)
 
         paginator.add_line(result)
 
-        interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
+        interface = Interface(ctx.bot, paginator, owner=ctx.author)
         return await interface.send_to(ctx)
 
     @Feature.Command(parent="jsk", name="py", aliases=["python", "eval"])
@@ -162,7 +171,7 @@ class PythonFeature(Feature):
     @Feature.Command(parent="jsk", name="repl")
     async def jsk_repl(self, ctx: commands.Context):
         """
-        Launches a Python interactive shell in the current channel. Messages not starting with "`" will be ignored.
+        Launches a Python interactive shell in the current channel. Messages not starting with "`" will be ignored by default.
         Inspired by R.Danny's implementation (https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/admin.py).
         """
         arg_dict = get_var_dict_from_ctx(ctx, Flags.SCOPE_PREFIX)
@@ -186,7 +195,7 @@ class PythonFeature(Feature):
         def check(m):
             return m.author.id == ctx.author.id and \
                    m.channel.id == ctx.channel.id and \
-                   m.content.startswith("`")
+                   True if Flags.NO_REPL_PREFIX else m.content.startswith("`")
 
         while True:
             try:
@@ -264,11 +273,11 @@ class PythonFeature(Feature):
                                 fp=io.BytesIO(text.encode('utf-8'))
                             )))
                         else:
-                            paginator = WrappedPaginator(prefix="```prolog", max_size=4000)
+                            paginator = WrappedPaginator(prefix="```prolog", max_size=MAX_MESSAGE_SIZE - 20)
 
                             paginator.add_line(text)
 
-                            interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
+                            interface = Interface(ctx.bot, paginator, owner=ctx.author)
                             send(await interface.send_to(ctx))
         finally:
             scope.clear_intersection(arg_dict)
@@ -290,9 +299,9 @@ class PythonFeature(Feature):
                     fp=io.BytesIO(text.encode('utf-8'))
                 ))
             else:
-                paginator = WrappedPaginator(prefix='```py', max_size=4000)
+                paginator = WrappedPaginator(prefix='```py', max_size=MAX_MESSAGE_SIZE - 20)
 
                 paginator.add_line(text)
 
-                interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
+                interface = Interface(ctx.bot, paginator, owner=ctx.author)
                 await interface.send_to(ctx)

@@ -20,7 +20,7 @@ import discord
 from discord.ext import commands
 
 from jishaku.flags import Flags
-from jishaku.paginators import PaginatorEmbedInterface
+from jishaku.paginators import Interface, MAX_MESSAGE_SIZE
 
 
 async def send_traceback(bot: commands.Bot, destination: discord.Message, verbosity: int, send_to_author: bool, *exc_info):
@@ -42,14 +42,17 @@ async def send_traceback(bot: commands.Bot, destination: discord.Message, verbos
 
     channel = destination.author if send_to_author else destination.channel
 
-    if len(traceback_content) <= 4086:
-        return await channel.send(embed=discord.Embed(title="Error", color=discord.Colour.red(), description=f"```py\n{traceback_content}\n```"))
+    if len(traceback_content) <= MAX_MESSAGE_SIZE - 10:
+        if Flags.NO_EMBEDS:
+            return await channel.send(f"```py\n{traceback_content}\n```")
+        else:
+            return await channel.send(embed=discord.Embed(title="Error", color=discord.Colour.red(), description=f"```py\n{traceback_content}\n```"))
 
-    paginator = commands.Paginator(prefix='```py', max_size=4000)
+    paginator = commands.Paginator(prefix='```py', max_size=MAX_MESSAGE_SIZE - 20)
     for line in traceback_content.split('\n'):
         paginator.add_line(line)
 
-    interface = PaginatorEmbedInterface(bot, paginator, owner=destination.author, embed=discord.Embed(title="Error", color=discord.Colour.red()))
+    interface = Interface(bot, paginator, owner=destination.author, embed=discord.Embed(title="Error", color=discord.Colour.red()))
     return await interface.send_to(channel)
 
 
@@ -79,6 +82,9 @@ async def attempt_add_reaction(msg: discord.Message, reaction: typing.Union[str,
     :param reaction: The reaction emoji, could be a string or `discord.Emoji`
     :return: A `discord.Reaction` or None, depending on if it failed or not.
     """
+    if Flags.NO_REACTION:
+        return
+
     try:
         return await msg.add_reaction(reaction)
     except discord.HTTPException:
@@ -91,17 +97,15 @@ class ReactionProcedureTimer:  # pylint: disable=too-few-public-methods
     """
     __slots__ = ('bot', 'message', 'loop', 'handle', 'raised', 'react')
 
-    def __init__(self, bot: commands.Bot, message: discord.Message, loop: typing.Optional[asyncio.BaseEventLoop] = None, react: bool = not Flags.NO_REACTION):
+    def __init__(self, bot: commands.Bot, message: discord.Message, loop: typing.Optional[asyncio.BaseEventLoop] = None):
         self.bot = bot
         self.message = message
         self.loop = loop or asyncio.get_event_loop()
         self.handle = None
         self.raised = False
-        self.react = react
 
     async def __aenter__(self):
-        if self.react:
-            self.handle = self.loop.create_task(do_after_sleep(1, attempt_add_reaction, self.message,
+        self.handle = self.loop.create_task(do_after_sleep(1, attempt_add_reaction, self.message,
                                                            "\N{BLACK RIGHT-POINTING TRIANGLE}"))
         return self
 
@@ -109,17 +113,13 @@ class ReactionProcedureTimer:  # pylint: disable=too-few-public-methods
         if self.handle:
             self.handle.cancel()
 
-        react = self.react
 
         # no exception, check mark
-        if not exc_val and react:
+        if not exc_val:
             await attempt_add_reaction(self.message, "\N{WHITE HEAVY CHECK MARK}")
             return
 
         self.raised = True
-
-        if not react:
-            return
 
         if isinstance(exc_val, (asyncio.TimeoutError, subprocess.TimeoutExpired)):
             # timed out, alarm clock

@@ -12,6 +12,7 @@ Tools related to interacting directly with the shell.
 """
 
 import asyncio
+import getpass
 import os
 import pathlib
 import platform
@@ -64,7 +65,7 @@ class ShellReader:
             self.escape_ansi = True
         else:
             sequence = [SHELL, "-c", code]
-            self.ps1 = f"{os.getlogin()}@{platform.node()}:{str(pathlib.Path().resolve())}$ "
+            self.ps1 = f"{getpass.getuser()}@{platform.node()}:{str(pathlib.Path().resolve())}$ "
             self.highlight = "ansi"
             self.escape_ansi = escape_ansi
 

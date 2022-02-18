@@ -15,9 +15,7 @@ import itertools
 import math
 import time
 import traceback
-from urllib.parse import urlencode
 
-import discord
 from discord.ext import commands
 
 from jishaku.features.baseclass import Feature

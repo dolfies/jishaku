@@ -104,27 +104,33 @@ class Flags(metaclass=FlagMeta):  # pylint: disable=too-few-public-methods
         jishaku.Flags.HIDE = True
     """
 
-    # Flag to indicate the Jishaku base command group should be hidden
+    # Flag to indicate the Jishaku base command group should be hidden.
     HIDE: bool = True
 
-    # Flag to indicate that retention mode for REPL should be enabled by default
-    RETAIN: bool
+    # Flag to indicate that retention mode for REPL should be enabled by default. The jsk repl command always has retention on.
+    RETAIN: bool = False
 
-    # Flag to indicate that meta variables in REPL should not be prefixed with an underscore
+    # Flag to indicate that meta variables in REPL should not be prefixed with an underscore.
     NO_UNDERSCORE: bool = True
 
     # The scope prefix, i.e. the prefix that appears before Jishaku's builtin variables in REPL sessions.
     # It is recommended that you set this programatically.
     SCOPE_PREFIX: str = lambda flags: '' if flags.NO_UNDERSCORE else '_'  # type: ignore
 
-    # Flag to indicate whether to always use paginators over relying on Discord's file preview
+    # Flag to indicate whether to always use paginators over relying on Discord's file preview.
     FORCE_PAGINATOR: bool = True
 
     # Flag to indicate verbose error tracebacks should be sent to the invoking channel as opposed to via direct message.
     NO_DM_TRACEBACK: bool = True
 
-    # Flag to indicate usage of braille J in shutdown command
-    USE_BRAILLE_J: bool
+    # Flag to indicate whether to react with success/failure emojis.
+    NO_REACTION: bool = False
 
-    # Flag to indicate whether to react with success/failure emojis
-    NO_REACTION: bool
+    # Flag to indicate whether to disable embeds in output.
+    NO_EMBEDS: bool = False
+
+    # Flag to indicate whether messages need to be started with "`" to be processed by the REPL.
+    NO_REPL_PREFIX: bool = False
+
+    # Flag to indicate whether to replace Message objects with a link to the message.
+    REPLACE_MESSAGES: bool = True

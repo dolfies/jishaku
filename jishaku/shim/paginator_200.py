@@ -61,6 +61,8 @@ class PaginatorInterface(ui.View):  # pylint: disable=too-many-instance-attribut
         if not isinstance(paginator, commands.Paginator):
             raise TypeError('paginator must be a commands.Paginator instance')
 
+        kwargs.pop('embed', None)
+
         self._display_page = 0
 
         self.bot = bot

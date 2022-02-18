@@ -23,7 +23,7 @@ from discord.ext import commands
 from jishaku.exception_handling import ReplResponseReactor
 from jishaku.features.baseclass import Feature
 from jishaku.hljs import get_language, guess_file_traits
-from jishaku.paginators import PaginatorEmbedInterface, WrappedFilePaginator, use_file_check
+from jishaku.paginators import Interface, MAX_MESSAGE_SIZE, WrappedFilePaginator, use_file_check
 
 
 class FilesystemFeature(Feature):
@@ -84,8 +84,8 @@ class FilesystemFeature(Feature):
                             fp=file
                         ))
                 else:
-                    paginator = WrappedFilePaginator(file, line_span=line_span, max_size=4000)
-                    interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
+                    paginator = WrappedFilePaginator(file, line_span=line_span, max_size=MAX_MESSAGE_SIZE - 20)
+                    interface = Interface(ctx.bot, paginator, owner=ctx.author)
                     await interface.send_to(ctx)
         except UnicodeDecodeError:
             return await ctx.send(f"`{path}`: Couldn't determine the encoding of this file.")
@@ -132,11 +132,11 @@ class FilesystemFeature(Feature):
                 ))
             else:
                 try:
-                    paginator = WrappedFilePaginator(io.BytesIO(data), language_hints=hints, max_size=4000)
+                    paginator = WrappedFilePaginator(io.BytesIO(data), language_hints=hints, max_size=MAX_MESSAGE_SIZE - 20)
                 except UnicodeDecodeError:
                     return await ctx.send(f"Couldn't determine the encoding of the response. (status code {code})")
                 except ValueError as exc:
                     return await ctx.send(f"Couldn't read response (status code {code}), {exc}")
 
-                interface = PaginatorEmbedInterface(ctx.bot, paginator, owner=ctx.author)
+                interface = Interface(ctx.bot, paginator, owner=ctx.author)
                 await interface.send_to(ctx)

@@ -24,7 +24,10 @@ if discord.version_info >= (2, 0, 0):
 else:
     from jishaku.shim.paginator_170 import PaginatorEmbedInterface, PaginatorInterface
 
-__all__ = ('EmojiSettings', 'PaginatorInterface', 'PaginatorEmbedInterface',
+MAX_MESSAGE_SIZE = 2000 if Flags.NO_EMBEDS else 4096
+Interface = PaginatorInterface if Flags.NO_EMBEDS else PaginatorEmbedInterface
+
+__all__ = ('EmojiSettings', 'Interface','MAX_MESSAGE_SIZE',
            'WrappedPaginator', 'FilePaginator', 'use_file_check')
 
 
@@ -149,7 +152,7 @@ class WrappedFilePaginator(FilePaginator, WrappedPaginator):
 
 def use_file_check(ctx: commands.Context, size: int) -> bool:
     """
-    A check to determine if uploading a file and relying on Discord's file preview is acceptable over a PaginatorEmbedInterface.
+    A check to determine if uploading a file and relying on Discord's file preview is acceptable over an Interface.
     """
 
     return all([
