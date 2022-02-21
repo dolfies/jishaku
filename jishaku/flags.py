@@ -134,3 +134,6 @@ class Flags(metaclass=FlagMeta):  # pylint: disable=too-few-public-methods
 
     # Flag to indicate whether to replace Message objects with a link to the message.
     REPLACE_MESSAGES: bool = True
+
+    # Flag to indicate usage of braille J in shutdown command
+    USE_BRAILLE_J: bool
