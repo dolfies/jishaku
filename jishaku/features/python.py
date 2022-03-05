@@ -195,7 +195,7 @@ class PythonFeature(Feature):
         def check(m):
             return m.author.id == ctx.author.id and \
                    m.channel.id == ctx.channel.id and \
-                   True if Flags.NO_REPL_PREFIX else m.content.startswith("`")
+                   (True if Flags.NO_REPL_PREFIX else m.content.startswith("`"))
 
         while True:
             try:
