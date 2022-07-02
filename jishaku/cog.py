@@ -11,8 +11,12 @@ The Jishaku debugging and diagnostics cog implementation.
 
 """
 
+import inspect
+import typing
+
 from discord.ext import commands
 
+from jishaku.features.baseclass import Feature
 from jishaku.features.filesystem import FilesystemFeature
 from jishaku.features.guild import GuildFeature
 from jishaku.features.invocation import InvocationFeature
@@ -30,18 +34,29 @@ __all__ = (
 
 STANDARD_FEATURES = (GuildFeature, FilesystemFeature, InvocationFeature, ManagementFeature, ShellFeature, PythonFeature, RootCommand)
 
-OPTIONAL_FEATURES = []
+OPTIONAL_FEATURES: typing.List[typing.Type[Feature]] = []
 
 
-class Jishaku(*OPTIONAL_FEATURES, *STANDARD_FEATURES):  # pylint: disable=too-few-public-methods
+class Jishaku(*OPTIONAL_FEATURES, *STANDARD_FEATURES):  # type: ignore  # pylint: disable=too-few-public-methods
     """
     The frontend subclass that mixes in to form the final Jishaku cog.
     """
 
 
-def setup(bot: commands.Bot):
+async def async_setup(bot: commands.Bot):
+    """
+    The async setup function defining the jishaku.cog and jishaku extensions.
+    """
+
+    await bot.add_cog(Jishaku(bot=bot))
+
+
+def setup(bot: commands.Bot):  # pylint: disable=inconsistent-return-statements
     """
     The setup function defining the jishaku.cog and jishaku extensions.
     """
 
-    bot.add_cog(Jishaku(bot=bot))
+    if inspect.iscoroutinefunction(bot.add_cog):
+        return async_setup(bot)
+
+    bot.add_cog(Jishaku(bot=bot))  # type: ignore[reportUnusedCoroutine]
