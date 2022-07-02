@@ -145,10 +145,10 @@ class Flags(metaclass=FlagMeta):  # pylint: disable=too-few-public-methods
     """
 
     # Flag to indicate the Jishaku base command group should be hidden.
-    HIDE: bool = True
+    HIDE: bool
 
     # Flag to indicate that retention mode for REPL should be enabled by default. The jsk repl command always has retention on.
-    RETAIN: bool = False
+    RETAIN: bool
 
     # Flag to indicate that meta variables in REPL should not be prefixed with an underscore.
     NO_UNDERSCORE: bool = True
@@ -161,13 +161,13 @@ class Flags(metaclass=FlagMeta):  # pylint: disable=too-few-public-methods
     FORCE_PAGINATOR: bool = True
 
     # Flag to indicate whether to react with success/failure emojis.
-    NO_REACTION: bool = False
+    NO_REACTION: bool
 
     # Flag to indicate whether to disable embeds in output.
-    NO_EMBEDS: bool = True
+    NO_EMBEDS: bool
 
     # Flag to indicate whether messages need to be started with "`" to be processed by the REPL.
-    NO_REPL_PREFIX: bool = False
+    NO_REPL_PREFIX: bool
 
     # Flag to indicate whether to replace Message objects with a link to the message.
     REPLACE_MESSAGES: bool = True
