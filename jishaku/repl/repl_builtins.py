@@ -11,14 +11,15 @@ Builtin functions and variables within Jishaku REPL contexts.
 
 """
 
-from typing import Union
+import typing
 
 import aiohttp
 import discord
-from discord.ext import commands
+
+from jishaku.types import ContextA
 
 
-async def request(*args, **kwargs) -> Union[bytes, dict]:
+async def request(*args, **kwargs) -> typing.Union[bytes, dict]:
     """
     Performs a request against a URL,
     returning the response payload as a dictionary of the response payload interpreted as JSON.
@@ -27,7 +28,7 @@ async def request(*args, **kwargs) -> Union[bytes, dict]:
     with an additional ``json`` bool which indicates whether to return the result as JSON (defaults to ``True``).
     """
 
-    json = kwargs.pop('json', True)
+    json = kwargs.pop("json", True)
 
     async with aiohttp.ClientSession() as session:
         async with session.request(*args, **kwargs) as response:
@@ -38,24 +39,25 @@ async def request(*args, **kwargs) -> Union[bytes, dict]:
             return await response.read()
 
 
-def get_var_dict_from_ctx(ctx: commands.Context, prefix: str = '_'):
+def get_var_dict_from_ctx(ctx: ContextA, prefix: str = "_"):
     """
     Returns the dict to be used in REPL for a given Context.
     """
 
     raw_var_dict = {
-        'author': ctx.author,
-        'bot': ctx.bot,
-        'channel': ctx.channel,
-        'client': ctx.bot,
-        'ctx': ctx,
-        'find': discord.utils.find,
-        'get': discord.utils.get,
-        'guild': ctx.guild,
-        'message': ctx.message,
-        'msg': ctx.message,
-        'request': request,
-        'user': ctx.bot.user,
+        "author": ctx.author,
+        "bot": ctx.bot,
+        "channel": ctx.channel,
+        "client": ctx.bot,
+        "ctx": ctx,
+        "find": discord.utils.find,
+        "get": discord.utils.get,
+        "guild": ctx.guild,
+        "me": ctx.me,
+        "message": ctx.message,
+        "msg": ctx.message,
+        "request": request,
+        "user": ctx.bot.user,
     }
 
-    return {f'{prefix}{k}': v for k, v in raw_var_dict.items()}
+    return {f"{prefix}{k}": v for k, v in raw_var_dict.items()}

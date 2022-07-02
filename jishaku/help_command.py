@@ -11,6 +11,8 @@ HelpCommand subclasses with jishaku features
 
 """
 
+import typing
+
 from discord.ext import commands
 
 from jishaku.paginators import PaginatorEmbedInterface, PaginatorInterface
@@ -21,8 +23,8 @@ class DefaultPaginatorHelp(commands.DefaultHelpCommand):
     A subclass of :class:`commands.DefaultHelpCommand` that uses a PaginatorInterface for pages.
     """
 
-    def __init__(self, **options):
-        paginator = options.pop('paginator', commands.Paginator(max_size=1985))
+    def __init__(self, **options: typing.Any):
+        paginator = options.pop("paginator", commands.Paginator(max_size=1980))
 
         super().__init__(paginator=paginator, **options)
 
@@ -50,8 +52,8 @@ class MinimalPaginatorHelp(commands.MinimalHelpCommand):
     A subclass of :class:`commands.MinimalHelpCommand` that uses a PaginatorInterface for pages.
     """
 
-    def __init__(self, **options):
-        paginator = options.pop('paginator', commands.Paginator(prefix=None, suffix=None, max_size=1985))
+    def __init__(self, **options: typing.Any):
+        paginator = options.pop("paginator", commands.Paginator(prefix=None, suffix=None, max_size=1980))
 
         super().__init__(paginator=paginator, **options)
 

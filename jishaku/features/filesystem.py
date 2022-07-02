@@ -18,12 +18,12 @@ import re
 
 import aiohttp
 import discord
-from discord.ext import commands
 
 from jishaku.exception_handling import ReplResponseReactor
 from jishaku.features.baseclass import Feature
 from jishaku.hljs import get_language, guess_file_traits
 from jishaku.paginators import Interface, MAX_MESSAGE_SIZE, WrappedFilePaginator, use_file_check
+from jishaku.types import ContextA
 
 
 class FilesystemFeature(Feature):
@@ -34,7 +34,7 @@ class FilesystemFeature(Feature):
     __cat_line_regex = re.compile(r"(?:\.\/+)?(.+?)(?:#L?(\d+)(?:\-L?(\d+))?)?$")
 
     @Feature.Command(parent="jsk", name="cat")
-    async def jsk_cat(self, ctx: commands.Context, argument: str):
+    async def jsk_cat(self, ctx: ContextA, argument: str):
         """
         Read out a file, using syntax highlighting if detected.
 
@@ -60,10 +60,9 @@ class FilesystemFeature(Feature):
         size = os.path.getsize(path)
 
         if size <= 0:
-            return await ctx.send(f"`{path}`: Cowardly refusing to read a file with no size stat"
-                                  f" (it may be empty, endless or inaccessible).")
+            return await ctx.send(f"`{path}`: Cowardly refusing to read a file with no size stat" f" (it may be empty, endless or inaccessible).")
 
-        if size > 128 * (1024 ** 2):
+        if size > 128 * (1024**2):
             return await ctx.send(f"`{path}`: Cowardly refusing to read a file >128MB.")
 
         try:
@@ -72,17 +71,11 @@ class FilesystemFeature(Feature):
                     if line_span:
                         content, *_ = guess_file_traits(file.read())
 
-                        lines = content.split('\n')[line_span[0] - 1:line_span[1]]
+                        lines = content.split("\n")[line_span[0] - 1 : line_span[1]]
 
-                        await ctx.send(file=discord.File(
-                            filename=pathlib.Path(file.name).name,
-                            fp=io.BytesIO('\n'.join(lines).encode('utf-8'))
-                        ))
+                        await ctx.send(file=discord.File(filename=pathlib.Path(file.name).name, fp=io.BytesIO("\n".join(lines).encode("utf-8"))))
                     else:
-                        await ctx.send(file=discord.File(
-                            filename=pathlib.Path(file.name).name,
-                            fp=file
-                        ))
+                        await ctx.send(file=discord.File(filename=pathlib.Path(file.name).name, fp=file))
                 else:
                     paginator = WrappedFilePaginator(file, line_span=line_span, max_size=MAX_MESSAGE_SIZE - 20)
                     interface = Interface(ctx.bot, paginator, owner=ctx.author)
@@ -93,7 +86,7 @@ class FilesystemFeature(Feature):
             return await ctx.send(f"`{path}`: Couldn't read this file, {exc}")
 
     @Feature.Command(parent="jsk", name="curl")
-    async def jsk_curl(self, ctx: commands.Context, url: str):
+    async def jsk_curl(self, ctx: ContextA, url: str):
         """
         Download and display a text file from the internet.
 
@@ -107,10 +100,7 @@ class FilesystemFeature(Feature):
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
                     data = await response.read()
-                    hints = (
-                        response.content_type,
-                        url
-                    )
+                    hints = (response.content_type, url)
                     code = response.status
 
             if not data:
@@ -126,10 +116,7 @@ class FilesystemFeature(Feature):
                     if language:
                         break
 
-                await ctx.send(file=discord.File(
-                    filename=f"response.{language or 'txt'}",
-                    fp=io.BytesIO(data)
-                ))
+                await ctx.send(file=discord.File(filename=f"response.{language or 'txt'}", fp=io.BytesIO(data)))
             else:
                 try:
                     paginator = WrappedFilePaginator(io.BytesIO(data), language_hints=hints, max_size=MAX_MESSAGE_SIZE - 20)

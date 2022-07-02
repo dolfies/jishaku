@@ -16,8 +16,15 @@ import inspect
 import os
 import typing
 
+import discord
+
+from jishaku.types import ContextA
+
 ENABLED_SYMBOLS = ("true", "t", "yes", "y", "on", "1")
 DISABLED_SYMBOLS = ("false", "f", "no", "n", "off", "0")
+
+
+FlagHandler = typing.Optional[typing.Callable[["FlagMeta"], typing.Any]]
 
 
 @dataclasses.dataclass
@@ -28,12 +35,13 @@ class Flag:
 
     name: str
     flag_type: type
-    default: typing.Callable = None
+    default: FlagHandler = None
+    handler: FlagHandler = None
     override: typing.Any = None
 
-    def resolve(self, flags):  # pylint: disable=too-many-return-statements
+    def resolve_raw(self, flags: "FlagMeta"):  # pylint: disable=too-many-return-statements
         """
-        Resolve this flag. Only for internal use.
+        Receive the intrinsic value for this flag, before optionally being processed by the handler.
         """
 
         # Manual override, ignore environment in this case
@@ -61,6 +69,19 @@ class Flag:
 
         return self.flag_type()
 
+    def resolve(self, flags: "FlagMeta"):
+        """
+        Resolve this flag. Only for internal use.
+        Applies the handler when there is one.
+        """
+
+        value = self.resolve_raw(flags)
+
+        if self.handler:
+            return self.handler(value)  # type: ignore
+
+        return value
+
 
 class FlagMeta(type):
     """
@@ -68,21 +89,40 @@ class FlagMeta(type):
     This handles the Just-In-Time evaluation of flags, allowing them to be overridden during execution.
     """
 
-    def __new__(cls, name, base, attrs):
-        attrs['flag_map'] = {}
+    def __new__(
+        cls,
+        name: str,
+        base: typing.Tuple[typing.Type[typing.Any]],
+        attrs: typing.Dict[str, typing.Any],
+    ):
+        attrs["flag_map"] = {}
 
-        for flag_name, flag_type in attrs['__annotations__'].items():
-            attrs['flag_map'][flag_name] = Flag(flag_name, flag_type, attrs.pop(flag_name, None))
+        for flag_name, flag_type in attrs["__annotations__"].items():
+            default: typing.Union[
+                FlagHandler,
+                typing.Tuple[
+                    FlagHandler,  # default
+                    FlagHandler,  # handler
+                ],
+            ] = attrs.pop(flag_name, None)
+            handler: FlagHandler = None
+
+            if isinstance(default, tuple):
+                default, handler = default
+
+            attrs["flag_map"][flag_name] = Flag(flag_name, flag_type, default, handler)
 
         return super(FlagMeta, cls).__new__(cls, name, base, attrs)
 
     def __getattr__(cls, name: str):
-        if hasattr(cls, 'flag_map') and name in cls.flag_map:
+        cls.flag_map: typing.Dict[str, Flag]
+
+        if hasattr(cls, "flag_map") and name in cls.flag_map:
             return cls.flag_map[name].resolve(cls)
 
         return super().__getattribute__(name)
 
-    def __setattr__(cls, name: str, value):
+    def __setattr__(cls, name: str, value: typing.Any):
         if name in cls.flag_map:
             flag = cls.flag_map[name]
 
@@ -115,19 +155,16 @@ class Flags(metaclass=FlagMeta):  # pylint: disable=too-few-public-methods
 
     # The scope prefix, i.e. the prefix that appears before Jishaku's builtin variables in REPL sessions.
     # It is recommended that you set this programatically.
-    SCOPE_PREFIX: str = lambda flags: '' if flags.NO_UNDERSCORE else '_'  # type: ignore
+    SCOPE_PREFIX: str = lambda flags: "" if flags.NO_UNDERSCORE else "_"  # type: ignore
 
     # Flag to indicate whether to always use paginators over relying on Discord's file preview.
     FORCE_PAGINATOR: bool = True
-
-    # Flag to indicate verbose error tracebacks should be sent to the invoking channel as opposed to via direct message.
-    NO_DM_TRACEBACK: bool = True
 
     # Flag to indicate whether to react with success/failure emojis.
     NO_REACTION: bool = False
 
     # Flag to indicate whether to disable embeds in output.
-    NO_EMBEDS: bool = False
+    NO_EMBEDS: bool = True
 
     # Flag to indicate whether messages need to be started with "`" to be processed by the REPL.
     NO_REPL_PREFIX: bool = False
@@ -135,5 +172,49 @@ class Flags(metaclass=FlagMeta):  # pylint: disable=too-few-public-methods
     # Flag to indicate whether to replace Message objects with a link to the message.
     REPLACE_MESSAGES: bool = True
 
+    # Flag to indicate verbose error tracebacks should be sent to the invoking channel as opposed to via direct message.
+    # ALWAYS_DM_TRACEBACK takes precedence over this
+    NO_DM_TRACEBACK: bool = True
+
+    # Flag to indicate all errors, even minor ones like SyntaxErrors, should be sent via direct message.
+    ALWAYS_DM_TRACEBACK: bool
+
+    @classmethod
+    def traceback_destination(cls, message: discord.Message) -> typing.Optional[discord.abc.Messageable]:
+        """
+        Determine what 'default' location to send tracebacks to
+        When None, the caller should decide
+        """
+
+        if cls.ALWAYS_DM_TRACEBACK:
+            return message.author
+
+        if cls.NO_DM_TRACEBACK:
+            return message.channel
+
+        # Otherwise let the caller decide
+        return None
+
     # Flag to indicate usage of braille J in shutdown command
     USE_BRAILLE_J: bool
+
+    # Flag to indicate whether ANSI support should always be enabled
+    # USE_ANSI_NEVER takes precedence over this
+    USE_ANSI_ALWAYS: bool = True
+
+    # Flag to indicate whether ANSI support should always be disabled
+    USE_ANSI_NEVER: bool
+
+    @classmethod
+    def use_ansi(cls, ctx: ContextA) -> bool:
+        """
+        Determine whether to use ANSI support from flags and context
+        """
+
+        if cls.USE_ANSI_NEVER:
+            return False
+
+        if cls.USE_ANSI_ALWAYS:
+            return True
+
+        return not ctx.author.is_on_mobile() if isinstance(ctx.author, discord.Member) and ctx.bot.intents.presences else True

@@ -22,6 +22,7 @@ from jishaku.features.baseclass import Feature
 from jishaku.flags import Flags
 from jishaku.modules import package_version
 from jishaku.paginators import Interface, MAX_MESSAGE_SIZE
+from jishaku.types import ContextA
 
 try:
     import psutil
@@ -31,7 +32,7 @@ except ImportError:
 try:
     from importlib.metadata import distribution, packages_distributions
 except ImportError:
-    from importlib_metadata import distribution, packages_distributions
+    from importlib_metadata import distribution, packages_distributions  # type: ignore
 
 
 def natural_size(size_in_bytes: int):
@@ -41,9 +42,9 @@ def natural_size(size_in_bytes: int):
         1024 -> 1.00 KiB
         12345678 -> 11.77 MiB
     """
-    units = ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
+    units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
 
-    power = int(math.log(size_in_bytes, 1024))
+    power = int(math.log(max(abs(size_in_bytes), 1), 1024))
 
     return f"{size_in_bytes / (1024 ** power):.2f} {units[power]}"
 
@@ -53,13 +54,12 @@ class RootCommand(Feature):
     Feature containing the root jsk command
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any):
         super().__init__(*args, **kwargs)
-        self.jsk.hidden = Flags.HIDE
+        self.jsk.hidden = Flags.HIDE  # type: ignore
 
-    @Feature.Command(name="jishaku", aliases=["jsk"],
-                     invoke_without_command=True, ignore_extra=False)
-    async def jsk(self, ctx: commands.Context):
+    @Feature.Command(name="jishaku", aliases=["jsk"], invoke_without_command=True, ignore_extra=False)
+    async def jsk(self, ctx: ContextA):
         """
         The Jishaku debug and diagnostic commands.
 
@@ -67,7 +67,7 @@ class RootCommand(Feature):
         All other functionality is within its subcommands.
         """
 
-        embed = discord.Embed(title="About", color=0x000000)
+        embed = discord.Embed(title="About")
         field = []
 
         def flush_field(name: str):
@@ -76,25 +76,25 @@ class RootCommand(Feature):
             field = []
 
         # Try to locate what vends the `discord` package
-        distributions = [
-            dist for dist in packages_distributions()['discord']
+        distributions: typing.List[str] = [
+            dist
+            for dist in packages_distributions()["discord"]  # type: ignore
             if any(
-                file.parts == ('discord', '__init__.py')
-                for file in distribution(dist).files
+                file.parts == ("discord", "__init__.py")  # type: ignore
+                for file in distribution(dist).files  # type: ignore
             )
         ]
 
         if distributions:
-            dist_version = f'{distributions[0]} `{package_version(distributions[0])}`'
+            dist_version = f"{distributions[0]} `{package_version(distributions[0])}`"
         else:
-            dist_version = f'unknown `{discord.__version__}`'
+            dist_version = f"unknown `{discord.__version__}`"
 
         embed.description = "\n".join(
             [
-                f"Jishaku `{package_version('jishaku')}` on {dist_version}",
-                f"Python `{sys.version}` on `{sys.platform}`".replace("\n", ""),
-                f"Module was loaded <t:{self.load_time.timestamp():.0f}:R>, "
-                f"cog was loaded <t:{self.start_time.timestamp():.0f}:R>.",
+                f"Jishaku `{package_version('jishaku')}` on {dist_version}.",
+                f"Python `{sys.version}` on `{sys.platform}`.".replace("\n", ""),
+                f"Module was loaded <t:{self.load_time.timestamp():.0f}:R>, " f"cog was loaded <t:{self.start_time.timestamp():.0f}:R>.",
             ]
         )
 
@@ -106,9 +106,11 @@ class RootCommand(Feature):
                 with proc.oneshot():
                     try:
                         mem = proc.memory_full_info()
-                        field.append(f"Using {natural_size(mem.rss)} physical memory and "
-                                     f"{natural_size(mem.vms)} virtual memory, "
-                                     f"{natural_size(mem.uss)} of which unique to this process.")
+                        field.append(
+                            f"Using {natural_size(mem.rss)} physical memory and "
+                            f"{natural_size(mem.vms)} virtual memory, "
+                            f"{natural_size(mem.uss)} of which unique to this process."
+                        )
                     except psutil.AccessDenied:
                         pass
 
@@ -122,10 +124,7 @@ class RootCommand(Feature):
                         pass
 
             except psutil.AccessDenied:
-                field.append(
-                    "psutil is installed, but this process does not have high enough access rights "
-                    "to query process information."
-                )
+                field.append("psutil is installed, but this process does not have high enough access rights " "to query process information.")
 
             flush_field("Usage")
 
@@ -134,21 +133,12 @@ class RootCommand(Feature):
         # Show shard settings to summary
         if isinstance(self.bot, discord.AutoShardedClient):
             if len(self.bot.shards) > 20:
-                field.append(
-                    f"This bot is automatically sharded ({len(self.bot.shards)} shards of {self.bot.shard_count})"
-                    f" and can see {cache_summary}."
-                )
+                field.append(f"This bot is automatically sharded ({len(self.bot.shards)} shards of {self.bot.shard_count})" f" and can see {cache_summary}.")
             else:
-                shard_ids = ', '.join(str(i) for i in self.bot.shards.keys())
-                field.append(
-                    f"This bot is automatically sharded (Shards {shard_ids} of {self.bot.shard_count})"
-                    f" and can see {cache_summary}."
-                )
+                shard_ids = ", ".join(str(i) for i in self.bot.shards.keys())
+                field.append(f"This bot is automatically sharded (Shards {shard_ids} of {self.bot.shard_count})" f" and can see {cache_summary}.")
         elif self.bot.shard_count:
-            field.append(
-                f"This bot is manually sharded (Shard {self.bot.shard_id} of {self.bot.shard_count})"
-                f" and can see {cache_summary}."
-            )
+            field.append(f"This bot is manually sharded (Shard {self.bot.shard_id} of {self.bot.shard_count})" f" and can see {cache_summary}.")
         else:
             field.append(f"This bot is not sharded and can see {cache_summary}.")
 
@@ -161,12 +151,16 @@ class RootCommand(Feature):
             message_cache = "Message cache is disabled"
 
         if discord.version_info >= (1, 5, 0):
-            presence_intent = f"presence intent is {'enabled' if self.bot.intents.presences else 'disabled'}"
-            members_intent = f"guild members intent is {'enabled' if self.bot.intents.members else 'disabled'}"
+            remarks = {True: "enabled", False: "disabled", None: "unknown"}
 
-            field.append(f"{message_cache}, {members_intent}, and {presence_intent}.")
+            *group, last = (
+                f"{intent.replace('_', ' ')} intent is {remarks.get(getattr(self.bot.intents, intent, None))}"
+                for intent in ("presences", "members", "message_content")
+            )
+
+            field.append(f"{message_cache}, {', '.join(group)}, and {last}.")
         else:
-            guild_subscriptions = f"guild subscriptions are {'enabled' if self.bot._connection.guild_subscriptions else 'disabled'}"
+            guild_subscriptions = f"guild subscriptions are {'enabled' if self.bot._connection.guild_subscriptions else 'disabled'}"  # type: ignore
 
             field.append(f"{message_cache} and {guild_subscriptions}.")
 
@@ -180,7 +174,7 @@ class RootCommand(Feature):
         await ctx.send(embed=embed)
 
     @Feature.Command(parent="jsk", name="tasks")
-    async def jsk_tasks(self, ctx: commands.Context):
+    async def jsk_tasks(self, ctx: ContextA):
         """
         Shows the currently running jishaku tasks.
         """
@@ -191,14 +185,18 @@ class RootCommand(Feature):
         paginator = commands.Paginator(max_size=MAX_MESSAGE_SIZE - 20)
 
         for task in self.tasks:
-            paginator.add_line(f"{task.index}: `{task.ctx.command.qualified_name}`, invoked at "
-                               f"{task.ctx.message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+            if task.ctx.command:
+                paginator.add_line(
+                    f"{task.index}: `{task.ctx.command.qualified_name}`, invoked at " f"{task.ctx.message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+                )
+            else:
+                paginator.add_line(f"{task.index}: unknown, invoked at " f"{task.ctx.message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
         interface = Interface(ctx.bot, paginator, owner=ctx.author)
         return await interface.send_to(ctx)
 
     @Feature.Command(parent="jsk", name="cancel")
-    async def jsk_cancel(self, ctx: commands.Context, *, index: typing.Union[int, str]):
+    async def jsk_cancel(self, ctx: ContextA, *, index: typing.Union[int, str]):
         """
         Cancels a task with the given index.
 
@@ -212,7 +210,8 @@ class RootCommand(Feature):
             task_count = len(self.tasks)
 
             for task in self.tasks:
-                task.task.cancel()
+                if task.task:
+                    task.task.cancel()
 
             self.tasks.clear()
 
@@ -230,6 +229,13 @@ class RootCommand(Feature):
             else:
                 return await ctx.send("Unknown task.")
 
-        task.task.cancel()
-        return await ctx.send(f"Cancelled task {task.index}: `{task.ctx.command.qualified_name}`,"
-                              f" invoked at {task.ctx.message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        if task.task:
+            task.task.cancel()
+
+        if task.ctx.command:
+            await ctx.send(
+                f"Cancelled task {task.index}: `{task.ctx.command.qualified_name}`,"
+                f" invoked at {task.ctx.message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+            )
+        else:
+            await ctx.send(f"Cancelled task {task.index}: unknown," f" invoked at {task.ctx.message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC")

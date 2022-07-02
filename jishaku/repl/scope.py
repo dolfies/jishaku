@@ -30,13 +30,13 @@ class Scope:
         scope = Scope({'a': 3})  # a Scope with a pre-existing global scope key, and an empty local scope.
     """
 
-    __slots__ = ('globals', 'locals')
+    __slots__ = ("globals", "locals")
 
-    def __init__(self, globals_: dict = None, locals_: dict = None):
-        self.globals: dict = globals_ or {}
-        self.locals: dict = locals_ or {}
+    def __init__(self, globals_: typing.Optional[typing.Dict[str, typing.Any]] = None, locals_: typing.Optional[typing.Dict[str, typing.Any]] = None):
+        self.globals: typing.Dict[str, typing.Any] = globals_ or {}
+        self.locals: typing.Dict[str, typing.Any] = locals_ or {}
 
-    def clear_intersection(self, other_dict):
+    def clear_intersection(self, other_dict: typing.Dict[str, typing.Any]):
         """
         Clears out locals and globals from this scope where the key-value pair matches
         with other_dict.
@@ -66,7 +66,7 @@ class Scope:
 
         return self
 
-    def update(self, other):
+    def update(self, other: "Scope"):
         """
         Updates this scope with the content of another scope.
 
@@ -85,7 +85,7 @@ class Scope:
         self.locals.update(other.locals)
         return self
 
-    def update_globals(self, other: dict):
+    def update_globals(self, other: typing.Dict[str, typing.Any]):
         """
         Updates this scope's globals with a dict.
 
@@ -103,7 +103,7 @@ class Scope:
         self.globals.update(other)
         return self
 
-    def update_locals(self, other: dict):
+    def update_locals(self, other: typing.Dict[str, typing.Any]):
         """
         Updates this scope's locals with a dict.
 
@@ -122,7 +122,7 @@ class Scope:
         return self
 
 
-def get_parent_scope_from_var(name, global_ok=False, skip_frames=0) -> typing.Optional[Scope]:
+def get_parent_scope_from_var(name: str, global_ok: bool = False, skip_frames: int = 0) -> typing.Optional[Scope]:
     """
     Iterates up the frame stack looking for a frame-scope containing the given variable name.
 
@@ -134,7 +134,7 @@ def get_parent_scope_from_var(name, global_ok=False, skip_frames=0) -> typing.Op
 
     stack = inspect.stack()
     try:
-        for frame_info in stack[skip_frames + 1:]:
+        for frame_info in stack[skip_frames + 1 :]:
             frame = None
 
             try:
@@ -150,7 +150,7 @@ def get_parent_scope_from_var(name, global_ok=False, skip_frames=0) -> typing.Op
     return None
 
 
-def get_parent_var(name, global_ok=False, default=None, skip_frames=0):
+def get_parent_var(name: str, global_ok: bool = False, default: typing.Any = None, skip_frames: int = 0) -> typing.Any:
     """
     Directly gets a variable from a parent frame-scope.
 

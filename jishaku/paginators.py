@@ -11,12 +11,15 @@ Paginator-related tools and interfaces for Jishaku.
 
 """
 
+import typing
+
 import discord
 from discord.ext import commands
 
 from jishaku.flags import Flags
 from jishaku.hljs import get_language, guess_file_traits
 from jishaku.shim.paginator_base import EmojiSettings
+from jishaku.types import ContextA
 
 # Version detection
 if discord.version_info >= (2, 0, 0):
@@ -27,8 +30,14 @@ else:
 MAX_MESSAGE_SIZE = 2000 if Flags.NO_EMBEDS else 4096
 Interface = PaginatorInterface if Flags.NO_EMBEDS else PaginatorEmbedInterface
 
-__all__ = ('EmojiSettings', 'Interface','MAX_MESSAGE_SIZE',
-           'WrappedPaginator', 'FilePaginator', 'use_file_check')
+__all__ = (
+    "EmojiSettings",
+    "Interface",
+    "MAX_MESSAGE_SIZE",
+    "WrappedPaginator",
+    "FilePaginator",
+    "use_file_check",
+)
 
 
 class WrappedPaginator(commands.Paginator):
@@ -45,52 +54,68 @@ class WrappedPaginator(commands.Paginator):
     wrap_on: tuple
         A tuple of wrapping delimiters.
     include_wrapped: bool
-        Whether to include the delimiter at the start of the new wrapped line.
+        Whether to include the delimiter at the end of a wrapped line.
     force_wrap: bool
         If this is True, lines will be split at their maximum points should trimming not be possible
         with any provided delimiter.
     """
 
-    def __init__(self, *args, wrap_on=('\n', ' '), include_wrapped=True, force_wrap=False, **kwargs):
+    def __init__(
+        self,
+        *args: typing.Any,
+        wrap_on: typing.Tuple[str, ...] = ("\n", " "),
+        include_wrapped: bool = True,
+        force_wrap: bool = False,
+        **kwargs: typing.Any,
+    ):
         super().__init__(*args, **kwargs)
         self.wrap_on = wrap_on
         self.include_wrapped = include_wrapped
         self.force_wrap = force_wrap
 
-    def add_line(self, line='', *, empty=False):
-        true_max_size = self.max_size - self._prefix_len - self._suffix_len - 2
-        original_length = len(line)
+    def add_line(self, line: str = "", *, empty: bool = False):
+        true_max_size = self.max_size - self._prefix_len - self._suffix_len - 2 * self._linesep_len
+        start = 0
+        needle = 0
+        last_delimiter = -1
+        last_space = -1
 
-        while len(line) > true_max_size:
-            search_string = line[0:true_max_size - 1]
-            wrapped = False
-
-            for delimiter in self.wrap_on:
-                position = search_string.rfind(delimiter)
-
-                if position > 0:
-                    super().add_line(line[0:position], empty=empty)
-                    wrapped = True
-
-                    if self.include_wrapped:
-                        line = line[position:]
+        while needle < len(line):
+            if needle - start >= true_max_size:
+                if last_delimiter != -1:
+                    if self.include_wrapped and line[last_delimiter] != "\n":
+                        super().add_line(line[start : last_delimiter + 1])
+                        needle = last_delimiter + 1
+                        start = last_delimiter + 1
                     else:
-                        line = line[position + len(delimiter):]
-
-                    break
-
-            if not wrapped:
-                if self.force_wrap:
-                    super().add_line(line[0:true_max_size - 1])
-                    line = line[true_max_size - 1:]
+                        super().add_line(line[start:last_delimiter])
+                        needle = last_delimiter + 1
+                        start = last_delimiter + 1
+                elif last_space != -1:
+                    super().add_line(line[start:last_space])
+                    needle = last_space + 1
+                    start = last_space
                 else:
-                    raise ValueError(
-                        f"Line of length {original_length} had sequence of {len(line)} characters"
-                        f" (max is {true_max_size}) that WrappedPaginator could not wrap with"
-                        f" delimiters: {self.wrap_on}"
-                    )
+                    super().add_line(line[start:needle])
+                    start = needle
 
-        super().add_line(line, empty=empty)
+                last_delimiter = -1
+                last_space = -1
+
+            if line[needle] in self.wrap_on:
+                last_delimiter = needle
+            elif line[needle] == " ":
+                last_space = needle
+
+            needle += 1
+
+        last_line = line[start:needle]
+        if last_line:
+            super().add_line(last_line)
+
+        if empty:
+            self._current_page.append("")
+            self._count += self._linesep_len
 
 
 class FilePaginator(commands.Paginator):
@@ -103,14 +128,20 @@ class FilePaginator(commands.Paginator):
         A file-like (implements ``fp.read``) to read the data for this paginator from.
     line_span: Optional[Tuple[int, int]]
         A linespan to read from the file. If None, reads the whole file.
-    language_hints: Tuple[str]
+    language_hints: Tuple[str, ...]
         A tuple of strings that may hint to the language of this file.
         This could include filenames, MIME types, or shebangs.
         A shebang present in the actual file will always be prioritized over this.
     """
 
-    def __init__(self, fp, line_span=None, language_hints=(), **kwargs):
-        language = ''
+    def __init__(
+        self,
+        fp: typing.BinaryIO,
+        line_span: typing.Optional[typing.Tuple[int, int]] = None,
+        language_hints: typing.Tuple[str, ...] = (),
+        **kwargs: typing.Any,
+    ):
+        language = ""
 
         for hint in language_hints:
             language = get_language(hint)
@@ -127,17 +158,18 @@ class FilePaginator(commands.Paginator):
         content, _, file_language = guess_file_traits(fp.read())
 
         language = file_language or language
-        lines = content.split('\n')
+        lines = content.split("\n")
 
-        super().__init__(prefix=f'```{language}', suffix='```', **kwargs)
+        super().__init__(prefix=f"```{language}", suffix="```", **kwargs)
 
         if line_span:
-            line_span = sorted(line_span)
+            if line_span[1] < line_span[0]:
+                line_span = (line_span[1], line_span[0])
 
-            if min(line_span) < 1 or max(line_span) > len(lines):
+            if line_span[0] < 1 or line_span[1] > len(lines):
                 raise ValueError("Linespan goes out of bounds.")
 
-            lines = lines[line_span[0] - 1:line_span[1]]
+            lines = lines[line_span[0] - 1 : line_span[1]]
 
         for line in lines:
             self.add_line(line)
@@ -150,12 +182,20 @@ class WrappedFilePaginator(FilePaginator, WrappedPaginator):
     """
 
 
-def use_file_check(ctx: commands.Context, size: int) -> bool:
+def use_file_check(ctx: ContextA, size: int) -> bool:
     """
     A check to determine if uploading a file and relying on Discord's file preview is acceptable over an Interface.
     """
 
-    return all([
-        size < 50_000,  # Check the text is below the Discord cutoff point;
-        not Flags.FORCE_PAGINATOR,  # Check the user hasn't explicitly disabled this;
-    ])
+    return all(
+        [
+            size < 50_000,  # Check the text is below the Discord cutoff point;
+            not Flags.FORCE_PAGINATOR,  # Check the user hasn't explicitly disabled this;
+            (
+                # Ensure the user isn't on mobile
+                not ctx.author.is_on_mobile()
+                if ctx.guild and ctx.bot.intents.presences and isinstance(ctx.author, discord.Member)
+                else True
+            ),
+        ]
+    )

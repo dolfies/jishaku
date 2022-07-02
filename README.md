@@ -27,21 +27,6 @@ a debugging and utility extension for discord.py bots
 
 ***
 
-> <h3><b>⚠️ Warning</b></h3>
->
-> As of the 27th of August 2021, [discord.py has ceased development](https://gist.github.com/Rapptz/4a2f62751b9600a31a0d3c78100287f1).
->
-> Jishaku will continue to be maintained targeting both the PyPI version and the [latest git revision](https://github.com/Rapptz/discord.py/tree/45d498c1b76deaf3b394d17ccf56112fa691d160) as of the archive, until at least the date of the slash command mandate (currently speculated to be around April 2022).
->
-> As all trusted contributors have rejected continuing the library, I do not have enough trust in any forks to target those instead. The existing forks are handled by inexperienced developers, and I figure this will continue to be the case in the future, as all of the developers experienced enough to carry the torch do not want to maintain the library for similar reasons to Danny himself.
->
-> However, if you personally decide that you wish to use a fork, I will allow Jishaku to honor your decision by removing the `discord.py` package requirement. **This means, from now on, installing jishaku will not automatically handle installing `discord.py`, you must choose a version to use yourself**. Any fork that you use must be compatible with the original (in that it supplies the `discord` module and its namespaces).
->
-> When April 2022 comes, I will make a decision at the time as to whether I want to continue maintaining Jishaku. I still enjoy making and maintaining bots, but implementing Jishaku under the philosophies I have defined so far will likely be impossible under the new slash commands, and I don't really want to compromise my work for the sake of appeasing a company that doesn't care for its developers.
->
-> I hope you've found Jishaku useful, and hopefully it will get to live on in one way or another.
-
-
 jishaku is an extension for bot developers that enables rapid prototyping, experimentation, and debugging of features for bots.
 
 This is a fork I use to remove/modify things I don't like, and work on new features.
@@ -115,7 +100,7 @@ You can also import the module to use the command development utilities.
                     </td>
                 </tr>
                 <tr>
-                    <td><code>_author</code><br><code>_channel</code><br><code>_guild</code><br><code>_message</code><br><code>_msg</code></td>
+                    <td><code>_author</code><br><code>_channel</code><br><code>_guild</code><br><code>_me</code><br><code>_message</code><br><code>_msg</code></td>
                     <td>
                         Shortcuts for attributes on <a href="https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Context"><code>_ctx</code></a>.
                     </td>
@@ -140,6 +125,9 @@ You can also import the module to use the command development utilities.
             This command compiles Python code in an asynchronous context, and then disassembles the resulting function into Python bytecode in the style of <code>dis.dis</code>.
             <br><br>
             This allows you to quickly and easily determine the bytecode that results from a given expression or piece of code. The code itself is not actually executed.
+            <br><br>
+            <h4>&gt; <code>jishaku ast &lt;argument&gt;</code></h4>
+            This command compiles Python code into its Abstract Syntax Tree, and then displays it as a formatted tree of AST blocks.
             <br><br>
         </td>
     </tr>
@@ -192,6 +180,9 @@ You can also import the module to use the command development utilities.
             <h4>&gt; <code>jishaku rtt</code></h4>
             This command calculates <a href="https://en.wikipedia.org/wiki/Round-trip_delay">Round-Trip Time</a> for your bot to the API. It does this by calculating response time samples, so you can tell if your bot is being slow or not.
             <br><br>
+            <h4>&gt; <code>jishaku sync [guild_ids...]</code></h4>
+            This command syncs the app_command tree for a list of guilds, or globally if none are given, and then reports the results.
+            <br><br>
         </td>
     </tr>
 </table>
@@ -233,7 +224,7 @@ You can also import the module to use the command development utilities.
             <code>jishaku repeat</code> repeats a command a number of times.
             <br><br>
             <h4>&gt; <code>jishaku permtrace &lt;channel&gt; [targets...]</code></h4>
-            This command allows you to investigate the source of expressed permissions in a given channel. Targets can be either a member, or a list of roles (to simulate a member with those roles). 
+            This command allows you to investigate the source of expressed permissions in a given channel. Targets can be either a member, or a list of roles (to simulate a member with those roles).
             <br><br>
             It will read all of the guild permissions and channel overwrites for the given member or roles in the channel, and provide a breakdown containing whether the permission is granted, and the most fundamental reason why.
             <br><br>
