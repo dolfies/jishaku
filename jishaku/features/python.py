@@ -25,7 +25,7 @@ from jishaku.features.baseclass import Feature
 from jishaku.flags import Flags
 from jishaku.functools import AsyncSender
 from jishaku.paginators import Interface, PaginatorInterface, PaginatorEmbedInterface, MAX_MESSAGE_SIZE, WrappedPaginator, use_file_check
-from jishaku.repl import AsyncCodeExecutor, Scope, all_inspections, disassemble, get_var_dict_from_ctx
+from jishaku.repl import AsyncCodeExecutor, Scope, all_inspections, create_tree, disassemble, get_var_dict_from_ctx
 from jishaku.types import ContextA
 
 
@@ -342,7 +342,7 @@ class PythonFeature(Feature):
         if typing.TYPE_CHECKING:
             argument: Codeblock = argument  # type: ignore
 
-        async with ReplResponseReactor(ctx.message):
+        async with ReplResponseReactor(ctx.bot, ctx.message):
             text = create_tree(argument.content, use_ansi=Flags.use_ansi(ctx))
 
             await ctx.send(file=discord.File(filename="ast.ansi", fp=io.BytesIO(text.encode("utf-8"))))

@@ -62,7 +62,7 @@ async def send_traceback(
         paginator.add_line(line)
 
     interface = Interface(bot, paginator, owner=owner, embed=discord.Embed(title="Error", color=discord.Colour.red()))
-    return await interface.send_to(channel)
+    return await interface.send_to(destination.channel if isinstance(destination, discord.Message) else destination)
 
 
 T = typing.TypeVar("T")
