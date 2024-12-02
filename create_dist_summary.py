@@ -27,7 +27,7 @@ SOFTWARE.
 
 import os
 
-import pkg_resources
+import importlib.metadata
 from jinja2 import Environment
 from jinja2.environment import Template
 from jinja2.loaders import BaseLoader
@@ -38,10 +38,7 @@ with open('dist_summary.jinja2', 'r', encoding='utf-8') as fp:
     template: Template = ENVIRONMENT.from_string(fp.read())
 
 with open('dist/DIST_SUMMARY.md', 'w', encoding='utf-8') as fp:
-    output = template.render(
-        env=os.getenv,
-        package=pkg_resources.get_distribution('jishaku'),
-    )
+    output = template.render(env=os.getenv, package=importlib.metadata.version("jishaku"))
 
     # Jinja loves obliterating trailing newlines
     if not output.endswith('\n'):

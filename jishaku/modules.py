@@ -15,7 +15,7 @@ import pathlib
 import typing
 
 import discord
-import pkg_resources
+import importlib.metadata
 from braceexpand import braceexpand
 from discord.ext import commands
 
@@ -93,8 +93,8 @@ def package_version(package_name: str) -> typing.Optional[str]:
     """
 
     try:
-        return pkg_resources.get_distribution(package_name).version
-    except (pkg_resources.DistributionNotFound, AttributeError):
+        return importlib.metadata.version(package_name)
+    except (importlib.metadata.PackageNotFoundError, AttributeError):
         return None
 
 

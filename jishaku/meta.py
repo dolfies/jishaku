@@ -13,8 +13,6 @@ Meta information about jishaku.
 
 import typing
 
-import pkg_resources
-
 __all__ = ("__author__", "__copyright__", "__docformat__", "__license__", "__title__", "__version__", "version_info")
 
 
@@ -36,6 +34,3 @@ __docformat__ = "restructuredtext en"
 __license__ = "MIT"
 __title__ = "jishaku"
 __version__ = ".".join(map(str, (version_info.major, version_info.minor, version_info.micro)))
-
-# This ensures that when jishaku is reloaded, pkg_resources requeries it to provide correct version info
-pkg_resources.working_set.by_key.pop("jishaku", None)  # type: ignore
